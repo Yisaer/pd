@@ -862,7 +862,7 @@ func (s *Server) CheckRegion(ctx context.Context, request *pdpb.CheckRegionReque
 		return &pdpb.CheckRegionResponse{Header: header}, nil
 	}
 
-	if !opt.IsRegionReplicated(rc, region) || region.GetLeader() == nil {
+	if !opt.IsRegionReplicated(rc, region) {
 		rc.AddSuspectRegions(region.GetID())
 		return &pdpb.CheckRegionResponse{
 			Header: s.header(),
