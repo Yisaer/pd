@@ -15,6 +15,7 @@ package schedulers
 
 import (
 	"context"
+	"fmt"
 
 	. "github.com/pingcap/check"
 	"github.com/pingcap/kvproto/pkg/metapb"
@@ -668,24 +669,16 @@ func (s *testBalanceLeaderSchedulerWithRuleEnabledSuite) schedule() []*operator.
 
 func (s *testBalanceLeaderSchedulerWithRuleEnabledSuite) TestBalanceLeaderWithConflictRule(c *C) {
 	rule := placement.Rule{
-		GroupID:  "test",
-		ID:       "1",
-		Index:    1,
-		StartKey: []byte(""),
-		EndKey:   []byte(""),
-		Role:     placement.Leader,
-		Count:    1,
-		LabelConstraints: []placement.LabelConstraint{
-			{
-				Key:    "role",
-				Op:     placement.In,
-				Values: []string{"leader"},
-			},
-		},
+		GroupID:        "pd",
+		ID:             "default",
+		Index:          1,
+		StartKey:       []byte(""),
+		EndKey:         []byte(""),
+		Role:           placement.Voter,
+		Count:          3,
 		LocationLabels: []string{"host"},
 	}
 	c.Check(s.tc.SetRule(&rule), IsNil)
-	c.Check(s.tc.DeleteRule("pd", "default"), IsNil)
 
 	// Stores:     1    2    3    4
 	// Leaders:    1    0    0    0
@@ -694,9 +687,22 @@ func (s *testBalanceLeaderSchedulerWithRuleEnabledSuite) TestBalanceLeaderWithCo
 	s.tc.AddLeaderStore(2, 0)
 	s.tc.AddLeaderStore(3, 0)
 	s.tc.AddLeaderStore(4, 0)
+	s.tc.AddLeaderStore(5, 0)
 	s.tc.AddLeaderRegion(1, 1, 2, 3, 4)
 	s.tc.AddLabelsStore(1, 1, map[string]string{
-		"role": "leader",
+		"host": "a",
+	})
+	s.tc.AddLabelsStore(2, 1, map[string]string{
+		"host": "b",
+	})
+	s.tc.AddLabelsStore(3, 1, map[string]string{
+		"host": "c",
+	})
+	s.tc.AddLabelsStore(4, 1, map[string]string{
+		"host": "d",
+	})
+	s.tc.AddLabelsStore(5, 1, map[string]string{
+		"engine": "tiflash",
 	})
 	c.Check(s.schedule(), IsNil)
 
@@ -704,5 +710,7 @@ func (s *testBalanceLeaderSchedulerWithRuleEnabledSuite) TestBalanceLeaderWithCo
 	// Leaders:    16   0    0    0
 	// Region1:    L    F    F    F
 	s.tc.UpdateLeaderCount(1, 16)
-	c.Check(s.schedule(), IsNil)
+	x := s.schedule()
+	c.Check(len(x), Equals, 1)
+	fmt.Println(x)
 }
