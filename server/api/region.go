@@ -15,6 +15,8 @@ package api
 
 import (
 	"container/heap"
+	"github.com/pingcap/log"
+	"go.uber.org/zap"
 	"net/http"
 	"net/url"
 	"sort"
@@ -582,6 +584,13 @@ func (h *regionsHandler) CheckRegion(w http.ResponseWriter, r *http.Request) {
 	} else {
 		rc.AddSuspectRegions(region.GetID())
 	}
+	//split table t between (0) and (9223372036854775807) regions 480;
+	log.Info("Check region forbidden",
+		zap.Uint64("regionID", region.GetID()),
+		zap.Int("maxReplicas", rc.GetMaxReplicas()),
+		zap.Int("peerReplicas", len(region.GetPeers())),
+		zap.Int("learners", len(region.GetLearners())),
+	)
 	h.rd.JSON(w, http.StatusOK, false)
 }
 
