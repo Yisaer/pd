@@ -26,10 +26,13 @@ import (
 var (
 	testAddrMutex sync.Mutex
 	testAddrMap   = make(map[string]struct{})
+	allocMutex    sync.Mutex
 )
 
 // Alloc allocates a local URL for testing.
 func Alloc() string {
+	allocMutex.Lock()
+	defer allocMutex.Unlock()
 	for i := 0; i < 10; i++ {
 		if u := tryAllocTestURL(); u != "" {
 			return u
