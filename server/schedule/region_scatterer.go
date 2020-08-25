@@ -114,6 +114,8 @@ func (s *selectedStores) newFilter(scope string) filter.Filter {
 }
 
 func (s *selectedStores) getTableDistribution(tableID int64, storeID uint64) uint64 {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	distribution, ok := s.peerDistribution[tableID]
 	if !ok || distribution == nil {
 		return 0
