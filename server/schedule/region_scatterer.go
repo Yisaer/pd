@@ -265,6 +265,7 @@ func (r *RegionScatterer) selectPeerToReplace(stores map[uint64]*core.StoreInfo,
 	minPeer := uint64(math.MaxUint64)
 	tableID := codec.Key(region.GetStartKey()).TableID()
 	var selectedCandidateID uint64
+	selectedCandidateID = 0
 	for _, candidate := range candidates {
 		count := context.selected.getTableDistribution(tableID, candidate.GetID())
 		if count < minPeer {
