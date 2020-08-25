@@ -70,8 +70,9 @@ func newSelectedLeaderStores() *selectedLeaderStores {
 }
 
 type selectedStores struct {
-	mu     sync.Mutex
-	stores map[uint64]struct{}
+	mu               sync.Mutex
+	stores           map[uint64]struct{}
+	peerDistribution map[int64]map[uint64]uint64
 }
 
 func newSelectedStores() *selectedStores {
@@ -80,13 +81,19 @@ func newSelectedStores() *selectedStores {
 	}
 }
 
-func (s *selectedStores) put(id uint64) bool {
+func (s *selectedStores) put(tableID int64, storeID uint64) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if _, ok := s.stores[id]; ok {
+	if _, ok := s.stores[storeID]; ok {
 		return false
 	}
-	s.stores[id] = struct{}{}
+	s.stores[storeID] = struct{}{}
+	distribution, ok := s.peerDistribution[tableID]
+	if !ok {
+		distribution = map[uint64]uint64{}
+	}
+	distribution[storeID] = distribution[storeID] + 1
+	s.peerDistribution[tableID] = distribution
 	return true
 }
 
@@ -104,6 +111,18 @@ func (s *selectedStores) newFilter(scope string) filter.Filter {
 		cloned[id] = struct{}{}
 	}
 	return filter.NewExcludedFilter(scope, nil, cloned)
+}
+
+func (s *selectedStores) getTableDistribution(tableID int64, storeID uint64) uint64 {
+	distribution, ok := s.peerDistribution[tableID]
+	if !ok || distribution == nil {
+		return 0
+	}
+	v, ok := distribution[storeID]
+	if !ok {
+		return 0
+	}
+	return v
 }
 
 // RegionScatterer scatters regions.
@@ -168,7 +187,7 @@ func (r *RegionScatterer) scatterRegion(region *core.RegionInfo) *operator.Opera
 			specialPeers[engine] = append(specialPeers[engine], peer)
 		}
 	}
-
+	tableID := codec.Key(region.GetStartKey()).TableID()
 	targetPeers := make(map[uint64]*metapb.Peer)
 	scatterWithSameEngine := func(peers []*metapb.Peer, context engineContext) {
 		stores := r.collectAvailableStores(region, context)
@@ -177,7 +196,7 @@ func (r *RegionScatterer) scatterRegion(region *core.RegionInfo) *operator.Opera
 				context.selected.reset()
 				stores = r.collectAvailableStores(region, context)
 			}
-			if context.selected.put(peer.GetStoreId()) {
+			if context.selected.put(tableID, peer.GetStoreId()) {
 				delete(stores, peer.GetStoreId())
 				targetPeers[peer.GetStoreId()] = peer
 				continue
@@ -189,7 +208,7 @@ func (r *RegionScatterer) scatterRegion(region *core.RegionInfo) *operator.Opera
 			}
 			// Remove it from stores and mark it as selected.
 			delete(stores, newPeer.GetStoreId())
-			context.selected.put(newPeer.GetStoreId())
+			context.selected.put(tableID, newPeer.GetStoreId())
 			targetPeers[newPeer.GetStoreId()] = newPeer
 		}
 	}
@@ -241,9 +260,26 @@ func (r *RegionScatterer) selectPeerToReplace(stores map[uint64]*core.StoreInfo,
 		return nil
 	}
 
-	target := candidates[rand.Intn(len(candidates))]
+	minPeer := uint64(math.MaxUint64)
+	tableID := codec.Key(region.GetStartKey()).TableID()
+	var selectedCandidateID uint64
+	for _, candidate := range candidates {
+		count := context.selected.getTableDistribution(tableID, candidate.GetID())
+		if count < minPeer {
+			minPeer = count
+			selectedCandidateID = candidate.GetID()
+		}
+	}
+	if selectedCandidateID < 1 {
+		target := candidates[rand.Intn(len(candidates))]
+		return &metapb.Peer{
+			StoreId:   target.GetID(),
+			IsLearner: oldPeer.GetIsLearner(),
+		}
+	}
+
 	return &metapb.Peer{
-		StoreId:   target.GetID(),
+		StoreId:   selectedCandidateID,
 		IsLearner: oldPeer.GetIsLearner(),
 	}
 }
