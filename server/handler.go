@@ -718,6 +718,10 @@ func (h *Handler) AddSplitRegionOperator(regionID uint64, policyStr string, keys
 	if region == nil {
 		return ErrRegionNotFound(regionID)
 	}
+	if !opt.IsRegionReplicated(c, region) {
+		c.AddSuspectRegions(region.GetID())
+		return errors.Errorf("region %d is not fully replicated", region.GetID())
+	}
 
 	policy, ok := pdpb.CheckPolicy_value[strings.ToUpper(policyStr)]
 	if !ok {
