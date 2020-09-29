@@ -17,7 +17,6 @@ import (
 	"context"
 	"github.com/pingcap/kvproto/pkg/kvrpcpb"
 	rpcconfig "github.com/tikv/client-go/config"
-	rpcretry "github.com/tikv/client-go/retry"
 	"github.com/tikv/client-go/rpc"
 	"github.com/tikv/pd/pkg/client"
 	"github.com/tikv/pd/server/schedule/opt"
@@ -27,18 +26,22 @@ type RegionSplitter struct {
 	cluster opt.Cluster
 }
 
-func (r *RegionSplitter) SplitRegions(splitKeys [][]byte, retryLimit int) error {
-	conf := rpcconfig.DefaultRPC()
-	sender := client.NewRegionRequestSender(&conf)
+func (r *RegionSplitter) SplitRegions(ctx context.Context, splitKeys [][]byte, retryLimit int) error {
+	unprocessedKeys := splitKeys
+	for i := 0; i < retryLimit; i++ {
+		newRegions, unprocessedKeys := r.splitRegions(ctx, unprocessedKeys)
+		if len(unprocessedKeys) < 1 {
+			break
+		}
+	}
 
-	r.cluster.GetRegionByKey()
 	return nil
 }
 
-func (r *RegionSplitter) splitRegions(ctx context.Context, splitKeys [][]byte) (retry bool, err error) {
-	bo := rpcretry.NewBackoffer(ctx, rpcretry.RawkvMaxBackoff)
+func (r *RegionSplitter) splitRegions(ctx context.Context, splitKeys [][]byte) (map[uint64]struct{}, [][]byte) {
 	conf := rpcconfig.DefaultRPC()
 	sender := client.NewRegionRequestSender(&conf)
+	newRegions := make(map[uint64]struct{}, len(splitKeys))
 
 	//TODO: support batch limit
 	groupKeys, unProcessedKeys := r.groupKeysByRegion(splitKeys)
@@ -47,6 +50,7 @@ func (r *RegionSplitter) splitRegions(ctx context.Context, splitKeys [][]byte) (
 		// TODO: assert region is not nil
 		// TODO: assert leader exists
 		// TODO: assert store exists
+		// TODO: is region replicated
 		leaderStore := r.cluster.GetStore(region.GetLeader().StoreId)
 		req := &rpc.Request{
 			Type: rpc.CmdSplitRegion,
@@ -54,18 +58,22 @@ func (r *RegionSplitter) splitRegions(ctx context.Context, splitKeys [][]byte) (
 				SplitKeys: keys,
 			},
 		}
-		resp, err := sender.SendReq(client.NewRegionRequest(bo, req, region, leaderStore, conf.ReadTimeoutShort))
+		resp, err := sender.SendReq(ctx, client.NewRegionRequest(req, region, leaderStore, conf.ReadTimeoutShort))
+		if err != nil {
+			for _, key := range keys {
+				unProcessedKeys = append(unProcessedKeys, key)
+			}
+		}
+		if resp == nil || resp.SplitRegion == nil {
+			for _, key := range keys {
+				unProcessedKeys = append(unProcessedKeys, key)
+			}
+		}
+		for _, newRegion := range resp.SplitRegion.Regions {
+			newRegions[newRegion.Id] = struct{}{}
+		}
 	}
-	//for id, key := range splitKeys {
-	//	if key == nil {
-	//		continue
-	//	}
-	//	region := r.cluster.GetRegionByKey(key)
-	//	if region == nil {
-	//		//TODO: error region
-	//		continue
-	//	}
-	//}
+	return newRegions, unProcessedKeys
 }
 
 // GroupKeysByRegion separates keys into groups by their belonging Regions.
