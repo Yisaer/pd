@@ -26,22 +26,27 @@ type RegionSplitter struct {
 	cluster opt.Cluster
 }
 
-func (r *RegionSplitter) SplitRegions(ctx context.Context, splitKeys [][]byte, retryLimit int) error {
+// SplitRegions support splitRegions by given split keys.
+func (r *RegionSplitter) SplitRegions(ctx context.Context, splitKeys [][]byte, retryLimit int) (int, []uint64) {
 	unprocessedKeys := splitKeys
+	newRegions := make(map[uint64]struct{}, len(splitKeys))
 	for i := 0; i < retryLimit; i++ {
-		newRegions, unprocessedKeys := r.splitRegions(ctx, unprocessedKeys)
+		unprocessedKeys := r.splitRegions(ctx, unprocessedKeys, newRegions)
 		if len(unprocessedKeys) < 1 {
 			break
 		}
+		//TODO: sleep for a while
 	}
-
-	return nil
+	returned := make([]uint64, 0, len(newRegions))
+	for regionId := range newRegions {
+		returned = append(returned, regionId)
+	}
+	return 100 - len(unprocessedKeys)*100/len(splitKeys), returned
 }
 
-func (r *RegionSplitter) splitRegions(ctx context.Context, splitKeys [][]byte) (map[uint64]struct{}, [][]byte) {
+func (r *RegionSplitter) splitRegions(ctx context.Context, splitKeys [][]byte, newRegions map[uint64]struct{}) [][]byte {
 	conf := rpcconfig.DefaultRPC()
 	sender := client.NewRegionRequestSender(&conf)
-	newRegions := make(map[uint64]struct{}, len(splitKeys))
 
 	//TODO: support batch limit
 	groupKeys, unProcessedKeys := r.groupKeysByRegion(splitKeys)
@@ -73,7 +78,7 @@ func (r *RegionSplitter) splitRegions(ctx context.Context, splitKeys [][]byte) (
 			newRegions[newRegion.Id] = struct{}{}
 		}
 	}
-	return newRegions, unProcessedKeys
+	return unProcessedKeys
 }
 
 // GroupKeysByRegion separates keys into groups by their belonging Regions.
