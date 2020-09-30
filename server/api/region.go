@@ -15,7 +15,9 @@ package api
 
 import (
 	"container/heap"
+	"context"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -662,6 +664,37 @@ func (h *regionsHandler) GetTopNRegions(w http.ResponseWriter, r *http.Request, 
 	regions := TopNRegions(rc.GetRegions(), less, limit)
 	regionsInfo := convertToAPIRegions(regions)
 	h.rd.JSON(w, http.StatusOK, regionsInfo)
+}
+
+func (h *regionsHandler) SplitRegions(w http.ResponseWriter, r *http.Request) {
+	rc := getCluster(r.Context())
+	var input map[string]interface{}
+	if err := apiutil.ReadJSONRespondError(h.rd, w, r.Body, &input); err != nil {
+		return
+	}
+	rawSplitKeys, ok := input["split_keys"].([]string)
+	if !ok {
+		h.rd.JSON(w, http.StatusBadRequest, errors.New("no split keys"))
+		return
+	}
+	splitKeys := make([][]byte, 0, len(rawSplitKeys))
+	for _, rawKey := range rawSplitKeys {
+		returned, err := hex.DecodeString(rawKey)
+		if err != nil {
+			h.rd.JSON(w, http.StatusBadRequest, fmt.Errorf("split key %s is not in hex format", rawKey))
+			return
+		}
+		splitKeys = append(splitKeys, returned)
+	}
+	percentage, regionIDs := rc.GetRegionSplitter().SplitRegions(context.Background(), splitKeys, 5)
+	s := struct {
+		ProcessedPercentage int      `json:"processed-percentage"`
+		RegionIDs           []uint64 `json:"region-ids"`
+	}{
+		ProcessedPercentage: percentage,
+		RegionIDs:           regionIDs,
+	}
+	h.rd.JSON(w, http.StatusOK, s)
 }
 
 // RegionHeap implements heap.Interface, used for selecting top n regions.

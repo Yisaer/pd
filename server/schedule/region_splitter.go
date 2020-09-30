@@ -15,6 +15,8 @@ package schedule
 
 import (
 	"context"
+	"time"
+
 	"github.com/pingcap/kvproto/pkg/kvrpcpb"
 	rpcconfig "github.com/tikv/client-go/config"
 	"github.com/tikv/client-go/rpc"
@@ -24,6 +26,12 @@ import (
 
 type RegionSplitter struct {
 	cluster opt.Cluster
+}
+
+func NewRegionSplitter(cluster opt.Cluster) *RegionSplitter {
+	return &RegionSplitter{
+		cluster: cluster,
+	}
 }
 
 // SplitRegions support splitRegions by given split keys.
@@ -36,6 +44,7 @@ func (r *RegionSplitter) SplitRegions(ctx context.Context, splitKeys [][]byte, r
 			break
 		}
 		//TODO: sleep for a while
+		time.Sleep(5 * time.Second)
 	}
 	returned := make([]uint64, 0, len(newRegions))
 	for regionId := range newRegions {
@@ -55,7 +64,7 @@ func (r *RegionSplitter) splitRegions(ctx context.Context, splitKeys [][]byte, n
 		// TODO: assert region is not nil
 		// TODO: assert leader exists
 		// TODO: assert store exists
-		// TODO: is region replicated
+		// TODO: assert region replicated
 		leaderStore := r.cluster.GetStore(region.GetLeader().StoreId)
 		req := &rpc.Request{
 			Type: rpc.CmdSplitRegion,
@@ -73,6 +82,7 @@ func (r *RegionSplitter) splitRegions(ctx context.Context, splitKeys [][]byte, n
 			for _, key := range keys {
 				unProcessedKeys = append(unProcessedKeys, key)
 			}
+			continue
 		}
 		for _, newRegion := range resp.SplitRegion.Regions {
 			newRegions[newRegion.Id] = struct{}{}
