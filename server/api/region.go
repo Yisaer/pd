@@ -19,6 +19,8 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/pingcap/log"
+	"go.uber.org/zap"
 	"net/http"
 	"net/url"
 	"sort"
@@ -667,25 +669,32 @@ func (h *regionsHandler) GetTopNRegions(w http.ResponseWriter, r *http.Request, 
 }
 
 func (h *regionsHandler) SplitRegions(w http.ResponseWriter, r *http.Request) {
+	log.Info("here1")
 	rc := getCluster(r.Context())
 	var input map[string]interface{}
 	if err := apiutil.ReadJSONRespondError(h.rd, w, r.Body, &input); err != nil {
+		h.rd.JSON(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	rawSplitKeys, ok := input["split_keys"].([]string)
+	log.Info("here2")
+	rawSplitKeys, ok := (input["split_keys"]).([]interface{})
 	if !ok {
-		h.rd.JSON(w, http.StatusBadRequest, errors.New("no split keys"))
+		log.Info("here3")
+		h.rd.JSON(w, http.StatusBadRequest, errors.New("no split keys").Error())
 		return
 	}
+	log.Info("here4")
 	splitKeys := make([][]byte, 0, len(rawSplitKeys))
 	for _, rawKey := range rawSplitKeys {
-		returned, err := hex.DecodeString(rawKey)
+		returned, err := hex.DecodeString(rawKey.(string))
 		if err != nil {
-			h.rd.JSON(w, http.StatusBadRequest, fmt.Errorf("split key %s is not in hex format", rawKey))
+			log.Info("here5")
+			h.rd.JSON(w, http.StatusBadRequest, fmt.Errorf("split key %s is not in hex format", rawKey).Error())
 			return
 		}
 		splitKeys = append(splitKeys, returned)
 	}
+	log.Info("here6")
 	percentage, regionIDs := rc.GetRegionSplitter().SplitRegions(context.Background(), splitKeys, 5)
 	s := struct {
 		ProcessedPercentage int      `json:"processed-percentage"`
@@ -694,6 +703,7 @@ func (h *regionsHandler) SplitRegions(w http.ResponseWriter, r *http.Request) {
 		ProcessedPercentage: percentage,
 		RegionIDs:           regionIDs,
 	}
+	log.Info("here7", zap.Int("per", percentage))
 	h.rd.JSON(w, http.StatusOK, s)
 }
 

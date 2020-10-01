@@ -15,6 +15,8 @@ package schedule
 
 import (
 	"context"
+	log "github.com/sirupsen/logrus"
+	"go.uber.org/zap"
 	"time"
 
 	"github.com/pingcap/kvproto/pkg/kvrpcpb"
@@ -39,12 +41,12 @@ func (r *RegionSplitter) SplitRegions(ctx context.Context, splitKeys [][]byte, r
 	unprocessedKeys := splitKeys
 	newRegions := make(map[uint64]struct{}, len(splitKeys))
 	for i := 0; i < retryLimit; i++ {
-		unprocessedKeys := r.splitRegions(ctx, unprocessedKeys, newRegions)
+		unprocessedKeys = r.splitRegions(ctx, unprocessedKeys, newRegions)
 		if len(unprocessedKeys) < 1 {
 			break
 		}
 		//TODO: sleep for a while
-		time.Sleep(5 * time.Second)
+		time.Sleep(500 * time.Millisecond)
 	}
 	returned := make([]uint64, 0, len(newRegions))
 	for regionId := range newRegions {
@@ -74,11 +76,13 @@ func (r *RegionSplitter) splitRegions(ctx context.Context, splitKeys [][]byte, n
 		}
 		resp, err := sender.SendReq(ctx, client.NewRegionRequest(req, region, leaderStore, conf.ReadTimeoutShort))
 		if err != nil {
+			log.Info("error1", zap.Error(err))
 			for _, key := range keys {
 				unProcessedKeys = append(unProcessedKeys, key)
 			}
 		}
 		if resp == nil || resp.SplitRegion == nil {
+			log.Info("error2")
 			for _, key := range keys {
 				unProcessedKeys = append(unProcessedKeys, key)
 			}
@@ -101,6 +105,7 @@ func (r *RegionSplitter) groupKeysByRegion(keys [][]byte) (map[uint64][][]byte, 
 	for _, key := range keys {
 		region := r.cluster.GetRegionByKey(key)
 		if region == nil {
+			log.Info("error0")
 			unProcessedKeys = append(unProcessedKeys, key)
 			continue
 		}
@@ -108,6 +113,9 @@ func (r *RegionSplitter) groupKeysByRegion(keys [][]byte) (map[uint64][][]byte, 
 		if !ok {
 			groupKeys[region.GetID()] = [][]byte{}
 		}
+		log.Info("found region",
+			zap.Uint64("regionID", region.GetID()),
+			zap.String("key", string(key[:])))
 		groupKeys[region.GetID()] = append(group, key)
 	}
 	return groupKeys, unProcessedKeys
