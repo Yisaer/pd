@@ -13,6 +13,12 @@
 
 package copyset
 
+import (
+	"fmt"
+	"sort"
+	"strings"
+)
+
 type NodeRole int
 
 const (
@@ -22,6 +28,20 @@ const (
 	Elementary
 	Supplementary
 )
+
+func RoleToString(role NodeRole) string {
+	switch role {
+	case Any:
+		return "Any"
+	case Extra:
+		return "Extra"
+	case Elementary:
+		return "Elementary"
+	case Supplementary:
+		return "Supplementary"
+	}
+	return ""
+}
 
 type Node struct {
 	id   uint64
@@ -60,6 +80,19 @@ func (g *Group) GetNodes() []uint64 {
 
 func (g *Group) IsComplete() bool {
 	return g.complete
+}
+
+func (g *Group) sign() string {
+	var nodesID []int
+	for nodeID := range g.nodes {
+		nodesID = append(nodesID, int(nodeID))
+	}
+	sort.Ints(nodesID)
+	var s []string
+	for _, id := range nodesID {
+		s = append(s, fmt.Sprintf("%v", id))
+	}
+	return strings.Join(s, "-")
 }
 
 func (g *Group) addNode(nodeID uint64) bool {

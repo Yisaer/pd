@@ -285,6 +285,45 @@ func (s *testManagerSuite) TestDelNode(c *C) {
 			expectSupplementaryNodes: 1,
 			expectExtraNodes:         14,
 		},
+		{
+			name:                     "16 -> 15, delete supplementary node",
+			n:                        16,
+			r:                        3,
+			s:                        6,
+			delNodeRole:              Supplementary,
+			expectGroups:             1,
+			expectCompleteGroups:     1,
+			expectInCompleteGroups:   0,
+			expectElementaryNodes:    15,
+			expectSupplementaryNodes: 0,
+			expectExtraNodes:         0,
+		},
+		{
+			name:                     "17 -> 16, delete supplementary node",
+			n:                        17,
+			r:                        3,
+			s:                        6,
+			delNodeRole:              Supplementary,
+			expectGroups:             2,
+			expectCompleteGroups:     1,
+			expectInCompleteGroups:   1,
+			expectElementaryNodes:    1,
+			expectSupplementaryNodes: 14,
+			expectExtraNodes:         1,
+		},
+		{
+			name:                     "31 -> 30, delete supplementary node",
+			n:                        31,
+			r:                        3,
+			s:                        6,
+			delNodeRole:              Supplementary,
+			expectGroups:             3,
+			expectCompleteGroups:     2,
+			expectInCompleteGroups:   1,
+			expectElementaryNodes:    15,
+			expectSupplementaryNodes: 15,
+			expectExtraNodes:         0,
+		},
 	}
 
 	for _, testcase := range testcases {
@@ -295,7 +334,9 @@ func (s *testManagerSuite) TestDelNode(c *C) {
 		}
 		m := NewNodeManager(testcase.r, testcase.s, nodes)
 		deleteNodeID := m.getNodesByRole(testcase.delNodeRole)[0]
+		m.debug()
 		err := m.DeleteNode(deleteNodeID)
+		m.debug()
 		c.Assert(err, IsNil)
 		c.Assert(testcase.expectGroups, Equals, len(m.GetGroups()))
 		groups := m.GetGroups()

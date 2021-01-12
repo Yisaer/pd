@@ -146,16 +146,6 @@ func (m *NodeManager) DeleteNode(nodeID uint64) error {
 		return nil
 	}
 
-	deleteNodeGroupID := -1
-	for id, group := range m.mu.groups {
-		if group.IsNodeExist(nodeID) {
-			deleteNodeGroupID = id
-		}
-	}
-	if deleteNodeGroupID < 0 {
-		return nil
-	}
-
 	deleteNodeFunc := func() {
 		newNodes := make([]*Node, 0, len(m.mu.nodes)-1)
 		for _, node := range m.mu.nodes {
@@ -201,6 +191,15 @@ func (m *NodeManager) DeleteNode(nodeID uint64) error {
 		addNodeFunc(addNodeID)
 		deleteNodeFunc()
 	case Elementary:
+		deleteNodeGroupID := -1
+		for id, group := range m.mu.groups {
+			if group.IsNodeExist(nodeID) {
+				deleteNodeGroupID = id
+			}
+		}
+		if deleteNodeGroupID < 0 {
+			panic("didn't find delete Node GroupID")
+		}
 		// TODO:
 		extraNodes := m.getNodesByRole(Extra)
 		if len(extraNodes) > 0 {
@@ -229,6 +228,35 @@ func (m *NodeManager) DeleteNode(nodeID uint64) error {
 		}
 	case Supplementary:
 		// TODO:
+		completeGroupID := -1
+		incompleteGroupID := -1
+		for id, group := range m.mu.groups {
+			if completeGroupID == -1 && group.IsNodeExist(nodeID) && group.IsComplete() {
+				completeGroupID = id
+			} else if incompleteGroupID == -1 && group.IsNodeExist(nodeID) && !group.IsComplete() {
+				incompleteGroupID = id
+			}
+		}
+		if completeGroupID < 0 || incompleteGroupID < 0 {
+			panic("can't find complete group or incomplete group for Supplementary node")
+		}
+		selectedElementaryNodeID := uint64(0)
+		if len(m.mu.groups) < 3 {
+			selectedElementaryNodeID = selectN(1, m.getNodesByRole(Elementary))[0]
+		} else {
+			for ; selectedElementaryNodeID == 0; {
+				selectedElementaryNodeID = selectN(1, m.getNodesByRole(Elementary))[0]
+				sg := m.getElementaryNodeGroupID(selectedElementaryNodeID)
+				if sg == completeGroupID {
+					selectedElementaryNodeID = 0
+				}
+			}
+		}
+		selectedExtraNodeID := selectN(1, m.getNodesByRole(Extra))[0]
+		m.mu.groups[incompleteGroupID].addNode(selectedElementaryNodeID)
+		m.mu.groups[completeGroupID].addNode(selectedExtraNodeID)
+		deleteNodeFunc()
+		m.removeDuplicatedGroups()
 	default:
 		return fmt.Errorf("unknown role")
 	}
@@ -325,6 +353,9 @@ func (m *NodeManager) applyRole() {
 				incomplete++
 			}
 		}
+		if incomplete > 1 {
+			panic("incomplete number is greater than 1")
+		}
 		if complete > 0 && incomplete == 0 {
 			nodes[i].role = Elementary
 		} else if complete > 0 && incomplete > 0 {
@@ -333,4 +364,53 @@ func (m *NodeManager) applyRole() {
 			nodes[i].role = Extra
 		}
 	}
+}
+
+func (m *NodeManager) removeDuplicatedGroups() {
+	newGroups := make([]*Group, 0, len(m.mu.groups))
+	gm := make(map[string]struct{})
+	for _, group := range m.mu.groups {
+		sign := group.sign()
+		if _, ok := gm[sign]; ok {
+			continue
+		}
+		gm[sign] = struct{}{}
+		newGroups = append(newGroups, group)
+	}
+	m.mu.groups = newGroups
+}
+
+func (m *NodeManager) debug() {
+	groups := m.GetGroups()
+	complete := 0
+	incomplete := 0
+	for _, node := range m.mu.nodes {
+		fmt.Println("node=", node.id, " role=", RoleToString(node.role))
+	}
+	for _, group := range groups {
+		fmt.Println(group.sign(), group.IsComplete())
+		if group.IsComplete() {
+			complete++
+		} else {
+			incomplete++
+		}
+	}
+	fmt.Println("complete=", complete)
+	fmt.Println("inComplete=", incomplete)
+	fmt.Println("expectElementaryNodes=", len(m.GetNodesByRole(Elementary)))
+	fmt.Println("expectSupplementaryNodes=", len(m.GetNodesByRole(Supplementary)))
+	fmt.Println("expectExtraNodes=", len(m.GetNodesByRole(Extra)))
+}
+
+func (m *NodeManager) getElementaryNodeGroupID(nodeID uint64) int {
+	node := m.getNodeByID(nodeID)
+	if node.GetRole() != Elementary {
+		panic("node is not Elementary")
+	}
+	for id, group := range m.mu.groups {
+		if group.IsNodeExist(nodeID) {
+			return id
+		}
+	}
+	return -1
 }
