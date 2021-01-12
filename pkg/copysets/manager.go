@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package copyset
+package copysets
 
 import (
 	"fmt"
@@ -25,26 +25,13 @@ type NodeManager struct {
 		nodes  []*Node
 		groups []*Group
 	}
-	// The replication we want
-	R int
-	// The scatter width we want
-	S int
-	// rows of shuffle matrix
-	L int
-	// columns of shuffle matrix
-	C int
 	// expect numbers in each group
 	NG int
 	// Initialized indicates whether NodeManager would work
 	workAble bool
 }
 
-func NewNodeManager(R, S int, nodesID []uint64) *NodeManager {
-	if S%(R-1) > 0 {
-		return &NodeManager{
-			workAble: false,
-		}
-	}
+func NewNodeManager(NG int, nodesID []uint64) *NodeManager {
 	nodes := make([]*Node, 0, len(nodesID))
 	for _, id := range nodesID {
 		nodes = append(nodes, &Node{id: id})
@@ -58,18 +45,8 @@ func NewNodeManager(R, S int, nodesID []uint64) *NodeManager {
 			nodes:  nodes,
 			groups: make([]*Group, 0, 0),
 		},
-		R: R,
-		S: S,
-		L: S / (R - 1),
-		C: func() int {
-			x := S / (R - 1)
-			if x%2 == 0 {
-				return x + 1
-			}
-			return x + 2
-		}(),
 	}
-	manager.NG = manager.L * manager.C
+	manager.NG = NG
 	manager.initializeGroups()
 	manager.applyRole()
 	return manager
@@ -200,7 +177,6 @@ func (m *NodeManager) DeleteNode(nodeID uint64) error {
 		if deleteNodeGroupID < 0 {
 			panic("didn't find delete Node GroupID")
 		}
-		// TODO:
 		extraNodes := m.getNodesByRole(Extra)
 		if len(extraNodes) > 0 {
 			extraNodes := m.getNodesByRole(Extra)
@@ -261,7 +237,7 @@ func (m *NodeManager) DeleteNode(nodeID uint64) error {
 		return fmt.Errorf("unknown role")
 	}
 	m.applyRole()
-	if len(m.mu.nodes) < m.L*m.C {
+	if len(m.mu.nodes) < m.NG {
 		m.workAble = false
 	}
 	return nil

@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package copyset
+package copysets
 
 import (
 	"fmt"
@@ -121,4 +121,16 @@ func (g *Group) selectN(n int) []uint64 {
 		s = append(s, id)
 	}
 	return selectN(n, s)
+}
+
+type CopySet struct {
+	nodes [3]uint64
+}
+
+func NewCopySet(n1, n2, n3 uint64) CopySet {
+	return CopySet{
+		nodes: [3]uint64{
+			n1, n2, n3,
+		},
+	}
 }

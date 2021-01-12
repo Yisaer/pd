@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package copyset
+package copysets
 
 import (
 	"testing"
@@ -31,8 +31,7 @@ func (s *testManagerSuite) TestNewManager(c *C) {
 	testcases := []struct {
 		name                     string
 		n                        int
-		r                        int
-		s                        int
+		ng                       int
 		expectGroups             int
 		expectCompleteGroups     int
 		expectInCompleteGroups   int
@@ -43,8 +42,7 @@ func (s *testManagerSuite) TestNewManager(c *C) {
 		{
 			name:                     "15 nodes",
 			n:                        15,
-			r:                        3,
-			s:                        6,
+			ng:                       15,
 			expectGroups:             1,
 			expectCompleteGroups:     1,
 			expectInCompleteGroups:   0,
@@ -55,8 +53,7 @@ func (s *testManagerSuite) TestNewManager(c *C) {
 		{
 			name:                     "16 nodes",
 			n:                        16,
-			r:                        3,
-			s:                        6,
+			ng:                       15,
 			expectGroups:             2,
 			expectCompleteGroups:     1,
 			expectInCompleteGroups:   1,
@@ -67,8 +64,7 @@ func (s *testManagerSuite) TestNewManager(c *C) {
 		{
 			name:                     "45 nodes",
 			n:                        45,
-			r:                        3,
-			s:                        6,
+			ng:                       15,
 			expectGroups:             3,
 			expectCompleteGroups:     3,
 			expectInCompleteGroups:   0,
@@ -79,8 +75,7 @@ func (s *testManagerSuite) TestNewManager(c *C) {
 		{
 			name:                     "20 nodes",
 			n:                        20,
-			r:                        3,
-			s:                        6,
+			ng:                       15,
 			expectGroups:             2,
 			expectCompleteGroups:     1,
 			expectInCompleteGroups:   1,
@@ -97,7 +92,7 @@ func (s *testManagerSuite) TestNewManager(c *C) {
 		for i := 1; i <= testcase.n; i++ {
 			nodes = append(nodes, uint64(i))
 		}
-		m := NewNodeManager(testcase.r, testcase.s, nodes)
+		m := NewNodeManager(testcase.ng, nodes)
 		groups := m.GetGroups()
 		c.Assert(testcase.expectGroups, Equals, len(groups))
 		complete := 0
@@ -121,8 +116,7 @@ func (s *testManagerSuite) TestAddNode(c *C) {
 	testcases := []struct {
 		name                     string
 		n                        int
-		r                        int
-		s                        int
+		ng                       int
 		expectGroups             int
 		expectCompleteGroups     int
 		expectInCompleteGroups   int
@@ -133,8 +127,7 @@ func (s *testManagerSuite) TestAddNode(c *C) {
 		{
 			name:                     "15 -> 16 nodes",
 			n:                        15,
-			r:                        3,
-			s:                        6,
+			ng:                       15,
 			expectGroups:             2,
 			expectCompleteGroups:     1,
 			expectInCompleteGroups:   1,
@@ -145,8 +138,7 @@ func (s *testManagerSuite) TestAddNode(c *C) {
 		{
 			name:                     "29 -> 30 nodes",
 			n:                        29,
-			r:                        3,
-			s:                        6,
+			ng:                       15,
 			expectGroups:             2,
 			expectCompleteGroups:     2,
 			expectInCompleteGroups:   0,
@@ -157,8 +149,7 @@ func (s *testManagerSuite) TestAddNode(c *C) {
 		{
 			name:                     "16 -> 17 nodes",
 			n:                        16,
-			r:                        3,
-			s:                        6,
+			ng:                       15,
 			expectGroups:             2,
 			expectCompleteGroups:     1,
 			expectInCompleteGroups:   1,
@@ -169,8 +160,7 @@ func (s *testManagerSuite) TestAddNode(c *C) {
 		{
 			name:                     "14 -> 15 nodes",
 			n:                        14,
-			r:                        3,
-			s:                        6,
+			ng:                       15,
 			expectGroups:             1,
 			expectCompleteGroups:     1,
 			expectInCompleteGroups:   0,
@@ -181,8 +171,7 @@ func (s *testManagerSuite) TestAddNode(c *C) {
 		{
 			name:                     "13 -> 14 nodes",
 			n:                        13,
-			r:                        3,
-			s:                        6,
+			ng:                       15,
 			expectGroups:             1,
 			expectCompleteGroups:     0,
 			expectInCompleteGroups:   1,
@@ -198,7 +187,7 @@ func (s *testManagerSuite) TestAddNode(c *C) {
 		for i := 1; i <= testcase.n; i++ {
 			nodes = append(nodes, uint64(i))
 		}
-		m := NewNodeManager(testcase.r, testcase.s, nodes)
+		m := NewNodeManager(testcase.ng, nodes)
 		m.AddNode(uint64(testcase.n + 1))
 		c.Assert(testcase.expectGroups, Equals, len(m.GetGroups()))
 		groups := m.GetGroups()
@@ -223,8 +212,7 @@ func (s *testManagerSuite) TestDelNode(c *C) {
 	testcases := []struct {
 		name                     string
 		n                        int
-		r                        int
-		s                        int
+		ng                       int
 		expectGroups             int
 		expectCompleteGroups     int
 		expectInCompleteGroups   int
@@ -236,8 +224,7 @@ func (s *testManagerSuite) TestDelNode(c *C) {
 		{
 			name:                     "16 -> 15, delete extra node",
 			n:                        16,
-			r:                        3,
-			s:                        6,
+			ng:                       15,
 			delNodeRole:              Extra,
 			expectGroups:             2,
 			expectCompleteGroups:     1,
@@ -249,8 +236,7 @@ func (s *testManagerSuite) TestDelNode(c *C) {
 		{
 			name:                     "16 -> 15, delete elementary node",
 			n:                        16,
-			r:                        3,
-			s:                        6,
+			ng:                       15,
 			delNodeRole:              Elementary,
 			expectGroups:             2,
 			expectCompleteGroups:     1,
@@ -262,8 +248,7 @@ func (s *testManagerSuite) TestDelNode(c *C) {
 		{
 			name:                     "15 -> 14, delete elementary node",
 			n:                        15,
-			r:                        3,
-			s:                        6,
+			ng:                       15,
 			delNodeRole:              Elementary,
 			expectGroups:             1,
 			expectCompleteGroups:     0,
@@ -275,8 +260,7 @@ func (s *testManagerSuite) TestDelNode(c *C) {
 		{
 			name:                     "30 -> 29, delete elementary node",
 			n:                        30,
-			r:                        3,
-			s:                        6,
+			ng:                       15,
 			delNodeRole:              Elementary,
 			expectGroups:             2,
 			expectCompleteGroups:     1,
@@ -288,8 +272,7 @@ func (s *testManagerSuite) TestDelNode(c *C) {
 		{
 			name:                     "16 -> 15, delete supplementary node",
 			n:                        16,
-			r:                        3,
-			s:                        6,
+			ng:                       15,
 			delNodeRole:              Supplementary,
 			expectGroups:             1,
 			expectCompleteGroups:     1,
@@ -301,8 +284,7 @@ func (s *testManagerSuite) TestDelNode(c *C) {
 		{
 			name:                     "17 -> 16, delete supplementary node",
 			n:                        17,
-			r:                        3,
-			s:                        6,
+			ng:                       15,
 			delNodeRole:              Supplementary,
 			expectGroups:             2,
 			expectCompleteGroups:     1,
@@ -314,8 +296,7 @@ func (s *testManagerSuite) TestDelNode(c *C) {
 		{
 			name:                     "31 -> 30, delete supplementary node",
 			n:                        31,
-			r:                        3,
-			s:                        6,
+			ng:                       15,
 			delNodeRole:              Supplementary,
 			expectGroups:             3,
 			expectCompleteGroups:     2,
@@ -332,7 +313,7 @@ func (s *testManagerSuite) TestDelNode(c *C) {
 		for i := 1; i <= testcase.n; i++ {
 			nodes = append(nodes, uint64(i))
 		}
-		m := NewNodeManager(testcase.r, testcase.s, nodes)
+		m := NewNodeManager(testcase.ng, nodes)
 		deleteNodeID := m.getNodesByRole(testcase.delNodeRole)[0]
 		m.debug()
 		err := m.DeleteNode(deleteNodeID)
