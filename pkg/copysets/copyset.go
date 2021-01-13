@@ -14,14 +14,10 @@
 package copysets
 
 import (
-	"sync"
+	"sort"
 )
 
 type CopySetManager struct {
-	mu struct {
-		sync.RWMutex
-		groups []*Group
-	}
 	// The replication we want
 	R int
 	// The scatter width we want
@@ -54,17 +50,9 @@ func NewCopySetManager(R, S int) *CopySetManager {
 	return cm
 }
 
-func (cm *CopySetManager) SetGroups(groups []*Group) {
-	cm.mu.Lock()
-	defer cm.mu.Unlock()
-	cm.mu.groups = groups
-}
-
-func (cm *CopySetManager) GenerateCopySets() []CopySet {
-	cm.mu.RLock()
-	defer cm.mu.RUnlock()
+func (cm *CopySetManager) GenerateCopySets(groups []*Group) []CopySet {
 	cs := make([]CopySet, 0, 0)
-	for _, group := range cm.mu.groups {
+	for _, group := range groups {
 		cs = append(cs, cm.generateCopySetForGroup(group)...)
 	}
 	return cs
@@ -91,6 +79,7 @@ func (cm *CopySetManager) generateCopySetForGroup(group *Group) []CopySet {
 }
 
 func (cm *CopySetManager) generateShuffleMatrixOrder1(rows []uint64) [][]uint64 {
+	rows = sortUint64Slice(rows)
 	var sm [][]uint64
 	for i := 0; i < cm.L; i++ {
 		rows := make([]uint64, len(rows), len(rows))
@@ -106,6 +95,7 @@ func (cm *CopySetManager) generateShuffleMatrixOrder1(rows []uint64) [][]uint64 
 }
 
 func (cm *CopySetManager) generateShuffleMatrixOrder2(rows []uint64) [][]uint64 {
+	rows = sortUint64Slice(rows)
 	var sm [][]uint64
 	for i := 0; i < cm.L; i++ {
 		rows := make([]uint64, len(rows), len(rows))
@@ -122,6 +112,7 @@ func (cm *CopySetManager) generateShuffleMatrixOrder2(rows []uint64) [][]uint64 
 }
 
 func (cm *CopySetManager) generateShuffleMatrixOrder3(rows []uint64) [][]uint64 {
+	rows = sortUint64Slice(rows)
 	var sm [][]uint64
 	for i := 0; i < cm.L; i++ {
 		rows := make([]uint64, len(rows), len(rows))
@@ -135,4 +126,16 @@ func (cm *CopySetManager) generateShuffleMatrixOrder3(rows []uint64) [][]uint64 
 		}
 	}
 	return sm
+}
+
+func sortUint64Slice(row []uint64) []uint64 {
+	newRow := make([]int, 0, len(row))
+	for _, ele := range row {
+		newRow = append(newRow, int(ele))
+	}
+	sort.Ints(newRow)
+	for i := 0; i < len(row); i++ {
+		row[i] = uint64(newRow[i])
+	}
+	return row
 }

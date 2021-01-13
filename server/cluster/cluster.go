@@ -16,6 +16,7 @@ package cluster
 import (
 	"context"
 	"fmt"
+	"github.com/tikv/pd/pkg/copysets"
 	"net/http"
 	"sync"
 	"time"
@@ -115,6 +116,7 @@ type RaftCluster struct {
 
 	replicationMode *replication.ModeManager
 	traceRegionFlow bool
+	copySetsManager *copysets.CopysetsManager
 
 	// It's used to manage components.
 	componentManager *component.Manager
@@ -256,6 +258,7 @@ func (c *RaftCluster) Start(s Server) error {
 	failpoint.Inject("highFrequencyClusterJobs", func() {
 		backgroundJobInterval = 100 * time.Microsecond
 	})
+	c.copySetsManager = copysets.NewCopysetsManager(c.opt.GetMaxReplicas(), 6, []uint64{})
 	go c.runBackgroundJobs(backgroundJobInterval)
 	go c.syncRegions()
 	go c.runReplicationMode()
@@ -914,6 +917,7 @@ func (c *RaftCluster) PutStore(store *metapb.Store) error {
 	}
 	c.OnStoreVersionChange()
 	c.AddStoreLimit(store)
+	c.copySetsManager.AddNode(store.Id)
 	return nil
 }
 
@@ -1692,6 +1696,10 @@ func (c *RaftCluster) GetClusterVersion() string {
 // GetEtcdClient returns the current etcd client
 func (c *RaftCluster) GetEtcdClient() *clientv3.Client {
 	return c.etcdClient
+}
+
+func (c *RaftCluster) GetCopySets() []copysets.CopySet {
+	return c.copySetsManager.GenerateCopySets()
 }
 
 var healthURL = "/pd/api/v1/ping"

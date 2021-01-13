@@ -15,6 +15,7 @@ package opt
 
 import (
 	"github.com/pingcap/kvproto/pkg/pdpb"
+	"github.com/tikv/pd/pkg/copysets"
 	"github.com/tikv/pd/server/config"
 	"github.com/tikv/pd/server/core"
 	"github.com/tikv/pd/server/schedule/placement"
@@ -41,6 +42,7 @@ type Cluster interface {
 	GetOpts() *config.PersistOptions
 	AllocID() (uint64, error)
 	FitRegion(*core.RegionInfo) *placement.RegionFit
+	GetCopySets() []copysets.CopySet
 	RemoveScheduler(name string) error
 	IsFeatureSupported(f versioninfo.Feature) bool
 	AddSuspectRegions(ids ...uint64)
