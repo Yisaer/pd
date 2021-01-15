@@ -21,6 +21,7 @@ import (
 	"github.com/pingcap/kvproto/pkg/metapb"
 	"github.com/pingcap/kvproto/pkg/pdpb"
 	"github.com/pingcap/log"
+	"github.com/tikv/pd/pkg/copysets"
 	"github.com/tikv/pd/pkg/mock/mockid"
 	"github.com/tikv/pd/server/config"
 	"github.com/tikv/pd/server/core"
@@ -40,6 +41,7 @@ const (
 
 // Cluster is used to mock clusterInfo for test use.
 type Cluster struct {
+	*copysets.CopysetsManager
 	*core.BasicCluster
 	*mockid.IDAllocator
 	*placement.RuleManager
@@ -63,6 +65,7 @@ func NewCluster(opts *config.PersistOptions) *Cluster {
 	if clus.PersistOptions.GetReplicationConfig().EnablePlacementRules {
 		clus.initRuleManager()
 	}
+	clus.CopysetsManager = copysets.NewCopysetsManager(3, 6, []uint64{})
 	return clus
 }
 
@@ -684,4 +687,18 @@ func (mc *Cluster) SetStoreLastHeartbeatInterval(storeID uint64, interval time.D
 	store := mc.GetStore(storeID)
 	newStore := store.Clone(core.SetLastHeartbeatTS(time.Now().Add(-interval)))
 	mc.PutStore(newStore)
+}
+
+func (mc *Cluster) GetCopySets() []copysets.CopySet {
+	return mc.CopysetsManager.GenerateCopySets()
+}
+
+// PutStoreWithLabels mocks method.
+func (mc *Cluster) PutStoreWithLabelsInCopySets(id uint64, labelPairs ...string) {
+	labels := make(map[string]string)
+	for i := 0; i < len(labelPairs); i += 2 {
+		labels[labelPairs[i]] = labelPairs[i+1]
+	}
+	mc.AddLabelsStore(id, 0, labels)
+	mc.CopysetsManager.AddNode(id)
 }

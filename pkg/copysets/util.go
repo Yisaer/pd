@@ -26,3 +26,7 @@ func selectN(n int, ids []uint64) []uint64 {
 	}
 	return s
 }
+
+func SelectN(n int, ids []uint64) []uint64 {
+	return selectN(n, ids)
+}

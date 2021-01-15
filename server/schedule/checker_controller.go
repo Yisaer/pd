@@ -37,6 +37,7 @@ type CheckerController struct {
 	replicaChecker    *checker.ReplicaChecker
 	ruleChecker       *checker.RuleChecker
 	mergeChecker      *checker.MergeChecker
+	copySetChecker    *checker.CopySetChecker
 	jointStateChecker *checker.JointStateChecker
 	regionWaitingList cache.Cache
 }
@@ -54,6 +55,7 @@ func NewCheckerController(ctx context.Context, cluster opt.Cluster, ruleManager 
 		ruleChecker:       checker.NewRuleChecker(cluster, ruleManager, regionWaitingList),
 		mergeChecker:      checker.NewMergeChecker(ctx, cluster),
 		jointStateChecker: checker.NewJointStateChecker(cluster),
+		copySetChecker:    checker.NewCopySetChecker(cluster),
 		regionWaitingList: regionWaitingList,
 	}
 }
@@ -68,8 +70,13 @@ func (c *CheckerController) CheckRegion(region *core.RegionInfo) []*operator.Ope
 		return []*operator.Operator{op}
 	}
 
+	if op := c.copySetChecker.Check(region); op != nil {
+		return []*operator.Operator{op}
+	}
+
 	if c.opts.IsPlacementRulesEnabled() {
 		if op := c.ruleChecker.Check(region); op != nil {
+
 			if opController.OperatorCount(operator.OpReplica) < c.opts.GetReplicaScheduleLimit() {
 				return []*operator.Operator{op}
 			}

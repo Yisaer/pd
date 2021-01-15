@@ -17,6 +17,8 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+
+	"github.com/tikv/pd/server/core"
 )
 
 type NodeRole int
@@ -133,4 +135,62 @@ func NewCopySet(n1, n2, n3 uint64) CopySet {
 			n1, n2, n3,
 		},
 	}
+}
+
+func (cs CopySet) IsRegionSatisfied(region *core.RegionInfo) bool {
+	m := make(map[uint64]struct{})
+	for _, peer := range region.GetPeers() {
+		m[peer.StoreId] = struct{}{}
+	}
+	cnt := 0
+	for _, node := range cs.nodes {
+		if _, ok := m[node]; ok {
+			cnt++
+		}
+	}
+	if cnt >= 3 {
+		return true
+	}
+	return false
+}
+
+func (cs CopySet) CalCopysetDistScore(region *core.RegionInfo) int {
+	originScore := 100
+	for _, peer := range region.GetPeers() {
+		if !cs.IsStoreInCopySet(peer.StoreId) {
+			originScore = originScore - 10
+		}
+	}
+	if !cs.IsStoreInCopySet(region.GetLeader().StoreId) {
+		originScore = originScore - 5
+	}
+	return originScore
+}
+
+func (cs CopySet) IsStoreInCopySet(storeID uint64) bool {
+	for _, node := range cs.nodes {
+		if node == storeID {
+			return true
+		}
+	}
+	return false
+}
+
+func (cs CopySet) StoresCandidate(region *core.RegionInfo) []uint64 {
+	storeCandidates := make([]uint64, 0, 0)
+	for _, node := range cs.nodes {
+		if !isAlreadyStorePeer(region, node) {
+			storeCandidates = append(storeCandidates, node)
+		}
+	}
+	return storeCandidates
+}
+
+func isAlreadyStorePeer(region *core.RegionInfo, storeID uint64) bool {
+	for _, peer := range region.GetPeers() {
+		if peer.StoreId == storeID {
+			return true
+		}
+	}
+	return false
 }
