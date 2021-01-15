@@ -21,7 +21,7 @@ import (
 	"github.com/pingcap/errors"
 	"github.com/pingcap/kvproto/pkg/metapb"
 	"github.com/pingcap/kvproto/pkg/pdpb"
-
+	"github.com/tikv/pd/pkg/copysets"
 	"github.com/tikv/pd/server/core"
 	"github.com/tikv/pd/server/schedule/opt"
 	"github.com/tikv/pd/server/schedule/placement"
@@ -83,6 +83,33 @@ func CreateMovePeerOperator(desc string, cluster opt.Cluster, region *core.Regio
 		RemovePeer(oldStore).
 		AddPeer(peer).
 		Build(kind)
+}
+
+// TODO: implement CreateMoveCopysetOperator
+func CreateMoveCopySetOperator(desc string, cluster opt.Cluster, region *core.RegionInfo, kind OpKind, targetCopyset copysets.CopySet) (*Operator, error) {
+	removePeers := make(map[uint64]struct{}, 0)
+	addPeers := targetCopyset.StoresCandidate(region)
+	for _, peer := range region.GetPeers() {
+		if !targetCopyset.IsStoreInCopySet(peer.StoreId) {
+			removePeers[peer.StoreId] = struct{}{}
+		}
+	}
+	leaderStoreID := uint64(0)
+	if !targetCopyset.IsStoreInCopySet(region.GetLeader().StoreId) {
+		leaderStoreID = addPeers[rand.Intn(len(addPeers))]
+	}
+	b := NewBuilder(desc, cluster, region)
+	for rmPeerStoreID := range removePeers {
+		b = b.RemovePeer(rmPeerStoreID)
+	}
+	for _, addPeerStoreID := range addPeers {
+		newPeer := &metapb.Peer{StoreId: addPeerStoreID}
+		b = b.AddPeer(newPeer)
+	}
+	if leaderStoreID > 0 {
+		b = b.SetLeader(leaderStoreID)
+	}
+	return b.Build(kind)
 }
 
 // CreateMoveLeaderOperator creates an operator that replaces an old leader with a new leader.

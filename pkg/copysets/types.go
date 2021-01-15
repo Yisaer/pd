@@ -186,6 +186,10 @@ func (cs CopySet) StoresCandidate(region *core.RegionInfo) []uint64 {
 	return storeCandidates
 }
 
+func (cs CopySet) GetNodesID() (uint64, uint64, uint64) {
+	return cs.nodes[0], cs.nodes[1], cs.nodes[2]
+}
+
 func isAlreadyStorePeer(region *core.RegionInfo, storeID uint64) bool {
 	for _, peer := range region.GetPeers() {
 		if peer.StoreId == storeID {
