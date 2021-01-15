@@ -14,6 +14,10 @@
 package checker
 
 import (
+	"math/rand"
+
+	"github.com/pingcap/kvproto/pkg/metapb"
+	log "github.com/sirupsen/logrus"
 	"github.com/tikv/pd/pkg/copysets"
 	"github.com/tikv/pd/server/core"
 	"github.com/tikv/pd/server/schedule/operator"
@@ -35,16 +39,59 @@ func NewCopySetChecker(cluster opt.Cluster) *CopySetChecker {
 
 func (c *CopySetChecker) Check(region *core.RegionInfo) *operator.Operator {
 	css := c.cluster.GetCopySets()
+	if css == nil {
+		return nil
+	}
 	cs := c.selectCopyset(region, css)
-	return c.generateOperator(region, cs)
+	op, err := c.generateOperator(region, cs)
+	if err != nil {
+		log.Error(err)
+		return nil
+	}
+	return op
 }
 
 // TODO: implement selectCopyset
 func (c *CopySetChecker) selectCopyset(region *core.RegionInfo, css []copysets.CopySet) copysets.CopySet {
-	return copysets.CopySet{}
+	tarCS := copysets.CopySet{}
+	highestScore := 0
+	for _, cs := range css {
+		if cs.IsRegionSatisfied(region) {
+			tarCS = cs
+			break
+		}
+		score := cs.CalCopysetDistScore(region)
+		if score > highestScore {
+			highestScore = score
+			tarCS = cs
+		}
+	}
+	return tarCS
 }
 
 // TODO: implement generateOperator
-func (c *CopySetChecker) generateOperator(region *core.RegionInfo, cs copysets.CopySet) *operator.Operator {
-	return &operator.Operator{}
+func (c *CopySetChecker) generateOperator(region *core.RegionInfo, cs copysets.CopySet) (*operator.Operator, error) {
+	if cs.IsRegionSatisfied(region) {
+		return nil, nil
+	}
+	storeCandidates := cs.StoresCandidate(region)
+	if len(storeCandidates) < 1 {
+		return nil, nil
+	}
+
+	for _, peer := range region.GetFollowers() {
+		if cs.IsStoreInCopySet(peer.StoreId) {
+			continue
+		}
+		selectStore := storeCandidates[rand.Intn(len(storeCandidates))]
+		newPeer := &metapb.Peer{StoreId: selectStore, Role: peer.Role}
+		return operator.CreateMovePeerOperator("copyset-checker", c.cluster, region, operator.OpRegion, peer.StoreId, newPeer)
+	}
+
+	if !cs.IsStoreInCopySet(region.GetLeader().StoreId) {
+		selectStore := storeCandidates[rand.Intn(len(storeCandidates))]
+		destPeer := &metapb.Peer{StoreId: selectStore}
+		return operator.CreateMoveLeaderOperator("copyset-checker", c.cluster, region, operator.OpLeader, region.GetLeader().StoreId, destPeer)
+	}
+	return nil, nil
 }
