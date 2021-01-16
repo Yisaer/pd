@@ -1,7 +1,7 @@
 package schedulers
 
 import (
-	log "github.com/sirupsen/logrus"
+	"github.com/pingcap/log"
 	"github.com/tikv/pd/pkg/copysets"
 	"github.com/tikv/pd/server/core"
 	"github.com/tikv/pd/server/schedule"

@@ -15,7 +15,7 @@ package schedulers
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
+	"github.com/pingcap/log"
 	"github.com/tikv/pd/pkg/copysets"
 	"github.com/tikv/pd/server/core"
 	"github.com/tikv/pd/server/schedule"
@@ -175,7 +175,7 @@ func (s *balanceCopySetScheduler) transferCopySet(cluster opt.Cluster, region *c
 		}
 		op, err := operator.CreateMoveCopySetOperator("balance-copyset-scheduler", cluster, region, operator.OpRegion, targetCS.cs)
 		if err != nil {
-			log.Errorf(err.Error())
+			log.Error(err.Error())
 			continue
 		}
 		return op
