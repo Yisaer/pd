@@ -11,6 +11,7 @@ import (
 	"go.uber.org/zap"
 	"math"
 	"math/rand"
+	"sort"
 )
 
 func init() {
@@ -73,26 +74,34 @@ func (s *balanceInGroupCopySetScheduler) Schedule(cluster opt.Cluster) []*operat
 	ops := make([]*operator.Operator, 0)
 	m := cluster.GetCopySetsByGroups(toid(cluster.GetStores()))
 	for sign, css := range m {
-		cssSign := ""
 		delta := float64(0)
 		var deltaCS copysets.CopySet
+		var selectRegion *core.RegionInfo
+		detalList := make([]cssDetltScore, 0)
 		for _, cs := range css {
 			n1, n2, n3 := cs.GetNodesID()
 			min, max := minAndMax(storesScore[n1], storesScore[n2], storesScore[n3])
-			if max-min > delta {
-				cssSign = cs.Sign()
-				delta = max - min
-				deltaCS = cs
+			delta = max - min
+			detalList = append(detalList, cssDetltScore{
+				cs:    cs,
+				sign:  cs.Sign(),
+				delta: delta,
+			})
+		}
+		sort.Slice(detalList, func(i, j int) bool {
+			return detalList[i].delta > detalList[j].delta
+		})
+		for _, ds := range detalList {
+			selectRegion = selectRandRegionInCopySet(cluster, ds.cs)
+			if selectRegion == nil {
+				log.Info("balanceInGroupCopySetScheduler no select region", zap.String("sign", deltaCS.Sign()))
+				continue
 			}
+			break
 		}
-		if cssSign == "" {
-			log.Info("balanceInGroupCopySetScheduler no delta found", zap.String("sign", sign))
-			continue
-		}
-		selectRegion := selectRandRegionInCopySet(cluster, deltaCS)
 		if selectRegion == nil {
-			log.Info("balanceInGroupCopySetScheduler no select region", zap.String("sign", deltaCS.Sign()))
-			continue
+			log.Info("balanceInGroupCopySetScheduler no select region", zap.String("sign", sign))
+
 		}
 		kind := core.NewScheduleKind(core.RegionKind, core.BySize)
 		tolerantResource := getTolerantResource(cluster, selectRegion, kind)
@@ -220,4 +229,10 @@ func minAndMax(n ...float64) (float64, float64) {
 func caldelta(score map[uint64]float64, s1, s2, s3 uint64) float64 {
 	min, max := minAndMax(score[s1], score[s2], score[s3])
 	return max - min
+}
+
+type cssDetltScore struct {
+	cs    copysets.CopySet
+	sign  string
+	delta float64
 }
