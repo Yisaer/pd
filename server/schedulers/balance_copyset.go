@@ -22,6 +22,7 @@ import (
 	"github.com/tikv/pd/server/schedule/filter"
 	"github.com/tikv/pd/server/schedule/operator"
 	"github.com/tikv/pd/server/schedule/opt"
+	"go.uber.org/zap"
 	"math"
 	"math/rand"
 	"sort"
@@ -166,6 +167,7 @@ func (s *balanceCopySetScheduler) transferCopySet(cluster opt.Cluster, region *c
 		}
 		kind := core.NewScheduleKind(core.RegionKind, core.BySize)
 		tolerantResource := getTolerantResource(cluster, region, kind)
+		log.Info("balanceCopySetScheduler", zap.Int64("tolerantResource", tolerantResource))
 		if targetCS.score <= sourceCSSore.score+float64(tolerantResource) {
 			continue
 		}
