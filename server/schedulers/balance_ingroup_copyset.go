@@ -78,7 +78,7 @@ func (s *balanceInGroupCopySetScheduler) Schedule(cluster opt.Cluster) []*operat
 		for id, cs := range css {
 			n1, n2, n3 := cs.GetNodesID()
 			min, max := minAndMax(storesScore[n1], storesScore[n2], storesScore[n3])
-			if delta > max-min {
+			if max-min > delta {
 				cssID = id
 				delta = max - min
 				deltaCS = cs
