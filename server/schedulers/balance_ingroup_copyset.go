@@ -113,7 +113,7 @@ func (s *balanceInGroupCopySetScheduler) Schedule(cluster opt.Cluster) []*operat
 				continue
 			}
 			if cs.IsStoreInCopySet(minStoreID) {
-				op, err := operator.CreateMoveCopySetOperator(s.GetType(), cluster, selectRegion, operator.OpRegion, cs)
+				op, err := operator.CreateMoveCopySetOperator(s.GetName(), cluster, selectRegion, operator.OpRegion, cs)
 				if err != nil {
 					log.Error("balanceInGroupCopySetScheduler schedule failed")
 					continue
