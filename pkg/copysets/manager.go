@@ -102,6 +102,9 @@ func (m *CopysetsManager) GenerateCopySets(nowID []uint64) []CopySet {
 		m.mu.nodesID = sliceToMap(nowID)
 		m.mu.nm = NewNodeManager(m.R*m.cm.C, nowID)
 		groups = m.mu.nm.GetGroups()
+		if len(groups) < 1 {
+			return nil
+		}
 		groupCopysets := m.cm.GenerateCopySets(groups)
 		m.mu.cacheGroup = groupCopysets
 		m.mu.cache = merge(groupCopysets)
@@ -128,6 +131,9 @@ func (m *CopysetsManager) GetCopysetsByGroup(nowID []uint64) map[string][]CopySe
 	if reset || len(m.mu.cacheGroup) < 1 {
 		m.mu.nodesID = sliceToMap(nowID)
 		groups = m.mu.nm.GetGroups()
+		if len(groups) < 1 {
+			return nil
+		}
 		groupCopysets := m.cm.GenerateCopySets(groups)
 		m.mu.cacheGroup = groupCopysets
 		m.mu.cache = merge(groupCopysets)
