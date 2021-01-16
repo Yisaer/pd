@@ -1699,14 +1699,13 @@ func (c *RaftCluster) GetEtcdClient() *clientv3.Client {
 	return c.etcdClient
 }
 
-func (c *RaftCluster) GetCopySets() []copysets.CopySet {
-	return c.copySetsManager.GenerateCopySets()
+func (c *RaftCluster) GetCopySets(x []uint64) []copysets.CopySet {
+	return c.copySetsManager.GenerateCopySets(x)
 }
 
-func (c *RaftCluster) GetCopySetsByGroups() map[string][]copysets.CopySet {
-	return c.copySetsManager.GetCopysetsByGroup()
+func (c *RaftCluster) GetCopySetsByGroups(x []uint64) map[string][]copysets.CopySet {
+	return c.copySetsManager.GetCopysetsByGroup(x)
 }
-
 
 var healthURL = "/pd/api/v1/ping"
 

@@ -115,7 +115,7 @@ func (s *ReplicaStrategy) swapStoreToFirst(stores []*core.StoreInfo, id uint64) 
 // SelectStoreToRemove returns the best option to remove from the region.
 func (s *ReplicaStrategy) SelectStoreToRemove(coLocationStores []*core.StoreInfo) uint64 {
 	isolationComparer := filter.IsolationComparer(s.locationLabels, coLocationStores)
-	csSourceFilter := filter.NewCopySetSourceFilter(s.checkerName, s.region, s.cluster.GetCopySets())
+	csSourceFilter := filter.NewCopySetSourceFilter(s.checkerName, s.region, s.cluster.GetCopySets(toid(s.cluster.GetStores())))
 	source := filter.NewCandidates(coLocationStores).
 		FilterSource(s.cluster.GetOpts(), &filter.StoreStateFilter{ActionScope: replicaCheckerName, MoveRegion: true}, csSourceFilter).
 		Sort(isolationComparer).Top(isolationComparer).
@@ -126,4 +126,12 @@ func (s *ReplicaStrategy) SelectStoreToRemove(coLocationStores []*core.StoreInfo
 		return 0
 	}
 	return source.GetID()
+}
+
+func toid(s []*core.StoreInfo) []uint64 {
+	x := make([]uint64, 0, 0)
+	for _, i := range s {
+		x = append(x, i.GetID())
+	}
+	return x
 }

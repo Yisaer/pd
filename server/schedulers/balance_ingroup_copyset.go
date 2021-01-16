@@ -67,7 +67,7 @@ func (s *balanceInGroupCopySetScheduler) Schedule(cluster opt.Cluster) []*operat
 	}
 	//groupCSScore := make(map[string][]copysetScore, 0)
 	ops := make([]*operator.Operator, 0)
-	for _, css := range cluster.GetCopySetsByGroups() {
+	for _, css := range cluster.GetCopySetsByGroups(toid(cluster.GetStores())) {
 		cssID := -1
 		delta := float64(0)
 		var deltaCS copysets.CopySet

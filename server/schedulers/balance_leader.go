@@ -134,7 +134,7 @@ func (l *balanceLeaderScheduler) Schedule(cluster opt.Cluster) (ops []*operator.
 	defer func() {
 		ops = nil
 	}()
-	if len(cluster.GetCopySets()) > 0 {
+	if len(cluster.GetCopySets(toid(cluster.GetStores()))) > 0 {
 		return nil
 	}
 	schedulerCounter.WithLabelValues(l.GetName(), "schedule").Inc()
@@ -203,9 +203,9 @@ func (l *balanceLeaderScheduler) transferLeaderOut(cluster opt.Cluster, source *
 		schedulerCounter.WithLabelValues(l.GetName(), "no-leader-region").Inc()
 		return nil
 	}
-	if len(cluster.GetCopySets()) > 0 {
+	if len(cluster.GetCopySets(toid(cluster.GetStores()))) > 0 {
 		valid := false
-		for _, cs := range cluster.GetCopySets() {
+		for _, cs := range cluster.GetCopySets(toid(cluster.GetStores())) {
 			if cs.IsRegionSatisfied(region) {
 				valid = true
 			}
@@ -249,9 +249,9 @@ func (l *balanceLeaderScheduler) transferLeaderIn(cluster opt.Cluster, target *c
 		schedulerCounter.WithLabelValues(l.GetName(), "no-follower-region").Inc()
 		return nil
 	}
-	if len(cluster.GetCopySets()) > 0 {
+	if len(cluster.GetCopySets(toid(cluster.GetStores()))) > 0 {
 		valid := false
-		for _, cs := range cluster.GetCopySets() {
+		for _, cs := range cluster.GetCopySets(toid(cluster.GetStores())) {
 			if cs.IsRegionSatisfied(region) {
 				valid = true
 			}

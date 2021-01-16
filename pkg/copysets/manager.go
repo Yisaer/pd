@@ -55,6 +55,9 @@ func NewCopysetsManager(R, S int, nodesID []uint64) *CopysetsManager {
 func (m *CopysetsManager) AddNode(nodeID uint64) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	if len(m.mu.nodesID) >= 15 {
+		return
+	}
 	csGauge.WithLabelValues("add_node").Set(float64(len(m.mu.nodesID)))
 	m.mu.nodesID[nodeID] = struct{}{}
 	if m.mu.nm != nil {
@@ -69,6 +72,9 @@ func (m *CopysetsManager) AddNode(nodeID uint64) {
 func (m *CopysetsManager) DelNode(nodeID uint64) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	if len(m.mu.nodesID) >= 15 {
+		return
+	}
 	csGauge.WithLabelValues("del_node").Set(float64(len(m.mu.nodesID)))
 	delete(m.mu.nodesID, nodeID)
 	if m.mu.nm != nil {

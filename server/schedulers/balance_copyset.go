@@ -75,9 +75,17 @@ func (s *balanceCopySetScheduler) IsScheduleAllowed(cluster opt.Cluster) bool {
 	return s.opController.OperatorCount(operator.OpRegion)-s.opController.OperatorCount(operator.OpMerge) < cluster.GetOpts().GetRegionScheduleLimit()
 }
 
+func toid(s []*core.StoreInfo) []uint64 {
+	x := make([]uint64, 0, 0)
+	for _, i := range s {
+		x = append(x, i.GetID())
+	}
+	return x
+}
+
 // TODO: implement balanceCopySetScheduler Schedule
 func (s *balanceCopySetScheduler) Schedule(cluster opt.Cluster) []*operator.Operator {
-	css := cluster.GetCopySets()
+	css := cluster.GetCopySets(toid(cluster.GetStores()))
 	//fmt.Println("balanceCopySetScheduler Schedule", len(css))
 	stores := cluster.GetStores()
 	opts := cluster.GetOpts()

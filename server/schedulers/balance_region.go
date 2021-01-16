@@ -133,7 +133,7 @@ func (s *balanceRegionScheduler) Schedule(cluster opt.Cluster) (ops []*operator.
 	defer func() {
 		ops = nil
 	}()
-	css := cluster.GetCopySets()
+	css := cluster.GetCopySets(toid(cluster.GetStores()))
 	if len(css) > 0 {
 		//fmt.Println("balanceRegionScheduler skip schedule")
 		return nil

@@ -42,8 +42,8 @@ type Cluster interface {
 	GetOpts() *config.PersistOptions
 	AllocID() (uint64, error)
 	FitRegion(*core.RegionInfo) *placement.RegionFit
-	GetCopySets() []copysets.CopySet
-	GetCopySetsByGroups() map[string][]copysets.CopySet
+	GetCopySets([]uint64) []copysets.CopySet
+	GetCopySetsByGroups([]uint64) map[string][]copysets.CopySet
 	RemoveScheduler(name string) error
 	IsFeatureSupported(f versioninfo.Feature) bool
 	AddSuspectRegions(ids ...uint64)

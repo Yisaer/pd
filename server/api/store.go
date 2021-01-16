@@ -601,10 +601,18 @@ func (h *storesHandler) GetStoreLimitScene(w http.ResponseWriter, r *http.Reques
 	h.rd.JSON(w, http.StatusOK, scene)
 }
 
+func toid(s []*core.StoreInfo) []uint64 {
+	x := make([]uint64, 0, 0)
+	for _, i := range s {
+		x = append(x, i.GetID())
+	}
+	return x
+}
+
 func (h *storesHandler) GetCopySets(w http.ResponseWriter, r *http.Request) {
 	rc := getCluster(r.Context())
-	css := rc.GetCopySets()
-	cssGroup := rc.GetCopySetsByGroups()
+	css := rc.GetCopySets(toid(rc.GetStores()))
+	cssGroup := rc.GetCopySetsByGroups(toid(rc.GetStores()))
 	rs := make([]CopysetResponse, 0)
 	for group, css := range cssGroup {
 		r := CopysetResponse{

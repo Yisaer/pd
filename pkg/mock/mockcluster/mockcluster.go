@@ -690,8 +690,8 @@ func (mc *Cluster) SetStoreLastHeartbeatInterval(storeID uint64, interval time.D
 	mc.PutStore(newStore)
 }
 
-func (mc *Cluster) GetCopySets() []copysets.CopySet {
-	return mc.CopysetsManager.GenerateCopySets()
+func (mc *Cluster) GetCopySets(x []uint64) []copysets.CopySet {
+	return mc.CopysetsManager.GenerateCopySets(x)
 }
 
 // PutStoreWithLabels mocks method.

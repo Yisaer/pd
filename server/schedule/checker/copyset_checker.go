@@ -38,7 +38,7 @@ func NewCopySetChecker(cluster opt.Cluster) *CopySetChecker {
 }
 
 func (c *CopySetChecker) Check(region *core.RegionInfo) *operator.Operator {
-	css := c.cluster.GetCopySets()
+	css := c.cluster.GetCopySets(toid(c.cluster.GetStores()))
 	if css == nil {
 		return nil
 	}
