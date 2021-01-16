@@ -122,6 +122,11 @@ func (s *balanceCopySetScheduler) Schedule(cluster opt.Cluster) []*operator.Oper
 	sort.Slice(cssScore, func(i, j int) bool {
 		return cssScore[i].score > cssScore[j].score
 	})
+	for _, csScore := range cssScore {
+		copysetMaxScoreGauge.WithLabelValues(s.GetType(), csScore.sign).Set(csScore.score)
+		copysetMinScoreGauge.WithLabelValues(s.GetType(), csScore.sign).Set(csScore.minScore)
+	}
+
 	for _, source := range cssScore {
 		sourceCS := source.cs
 		if source.minScore < 1 {

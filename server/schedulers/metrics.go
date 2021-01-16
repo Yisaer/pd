@@ -111,6 +111,22 @@ var scatterRangeRegionCounter = prometheus.NewCounterVec(
 		Help:      "Counter of scatter range region scheduler.",
 	}, []string{"type", "store"})
 
+var copysetMaxScoreGauge = prometheus.NewGaugeVec(
+	prometheus.GaugeOpts{
+		Namespace: "pd",
+		Subsystem: "scheduler",
+		Name:      "copyset_score",
+		Help:      "Score for copyset",
+	}, []string{"type", "name"})
+
+var copysetMinScoreGauge = prometheus.NewGaugeVec(
+	prometheus.GaugeOpts{
+		Namespace: "pd",
+		Subsystem: "scheduler",
+		Name:      "copyset_min_score",
+		Help:      "Score for copyset",
+	}, []string{"type", "name"})
+
 func init() {
 	prometheus.MustRegister(schedulerCounter)
 	prometheus.MustRegister(schedulerStatus)
@@ -124,4 +140,6 @@ func init() {
 	prometheus.MustRegister(scatterRangeRegionCounter)
 	prometheus.MustRegister(opInfluenceStatus)
 	prometheus.MustRegister(tolerantResourceStatus)
+	prometheus.MustRegister(copysetMaxScoreGauge)
+	prometheus.MustRegister(copysetMinScoreGauge)
 }

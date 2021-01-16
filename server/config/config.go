@@ -952,10 +952,11 @@ type SchedulerConfig struct {
 // If these schedulers are not in the persistent configuration, they
 // will be created automatically when reloading.
 var DefaultSchedulers = SchedulerConfigs{
-	{Type: "balance-region"},
+	//{Type: "balance-region"},
 	{Type: "balance-leader"},
-	{Type: "hot-region"},
-	{Type: "label"},
+	//{Type: "hot-region"},
+	//{Type: "label"},
+	//{Type: "balance-copyset"},
 }
 
 // IsDefaultScheduler checks whether the scheduler is enable by default.

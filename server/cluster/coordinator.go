@@ -17,12 +17,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/pingcap/errors"
 	"net/http"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/pingcap/errors"
 	"github.com/pingcap/failpoint"
 	"github.com/pingcap/log"
 	"github.com/tikv/pd/pkg/errs"
