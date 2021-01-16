@@ -72,19 +72,19 @@ func (s *balanceInGroupCopySetScheduler) Schedule(cluster opt.Cluster) []*operat
 	//groupCSScore := make(map[string][]copysetScore, 0)
 	ops := make([]*operator.Operator, 0)
 	for sign, css := range cluster.GetCopySetsByGroups(toid(cluster.GetStores())) {
-		cssID := -1
+		cssSign := ""
 		delta := float64(0)
 		var deltaCS copysets.CopySet
-		for id, cs := range css {
+		for _, cs := range css {
 			n1, n2, n3 := cs.GetNodesID()
 			min, max := minAndMax(storesScore[n1], storesScore[n2], storesScore[n3])
 			if max-min > delta {
-				cssID = id
+				cssSign = cs.Sign()
 				delta = max - min
 				deltaCS = cs
 			}
 		}
-		if cssID == -1 {
+		if cssSign == "" {
 			log.Info("balanceInGroupCopySetScheduler no delta found", zap.String("sign", sign))
 			continue
 		}
@@ -116,16 +116,16 @@ func (s *balanceInGroupCopySetScheduler) Schedule(cluster opt.Cluster) []*operat
 		}
 		find := false
 		var tarCs copysets.CopySet
-		for id, cs := range css {
-			if id == cssID {
+		for _, cs := range css {
+			if cs.Sign() == cssSign {
 				continue
 			}
-			maxD := math.MaxFloat64
+			minD := math.MaxFloat64
 			if cs.IsStoreInCopySet(minStoreID) {
 				n1, n2, n3 := cs.GetNodesID()
 				d := caldelta(storesScore, n1, n2, n3)
-				if d < maxD {
-					maxD = d
+				if d < minD {
+					minD = d
 					find = true
 					tarCs = cs
 				}
