@@ -129,7 +129,10 @@ func (s *balanceRegionScheduler) IsScheduleAllowed(cluster opt.Cluster) bool {
 	return s.opController.OperatorCount(operator.OpRegion)-s.opController.OperatorCount(operator.OpMerge) < cluster.GetOpts().GetRegionScheduleLimit()
 }
 
-func (s *balanceRegionScheduler) Schedule(cluster opt.Cluster) []*operator.Operator {
+func (s *balanceRegionScheduler) Schedule(cluster opt.Cluster) (ops []*operator.Operator) {
+	defer func() {
+		ops = nil
+	}()
 	css := cluster.GetCopySets()
 	if len(css) > 0 {
 		//fmt.Println("balanceRegionScheduler skip schedule")

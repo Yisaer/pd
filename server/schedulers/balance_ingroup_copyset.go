@@ -86,8 +86,17 @@ func (s *balanceInGroupCopySetScheduler) Schedule(cluster opt.Cluster) []*operat
 		selectRegion := selectRandRegionInCopySet(cluster, deltaCS)
 		kind := core.NewScheduleKind(core.RegionKind, core.BySize)
 		tolerantResource := getTolerantResource(cluster, selectRegion, kind)
-		log.Info("balanceInGroupCopySetScheduler", zap.Int64("tolerantResource", tolerantResource))
 		if delta <= float64(tolerantResource) {
+			n1, n2, n3 := deltaCS.GetNodesID()
+			s1 := storesScore[n1]
+			s2 := storesScore[n2]
+			s3 := storesScore[n3]
+			log.Info("balanceInGroupCopySetScheduler",
+				zap.Int64("tolerantResource", tolerantResource),
+				zap.String("select CS", deltaCS.Sign()),
+				zap.Float64("s1", s1),
+				zap.Float64("s2", s2),
+				zap.Float64("s3", s3))
 			continue
 		}
 

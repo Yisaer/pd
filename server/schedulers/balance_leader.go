@@ -130,7 +130,10 @@ func (l *balanceLeaderScheduler) IsScheduleAllowed(cluster opt.Cluster) bool {
 	return l.opController.OperatorCount(operator.OpLeader) < cluster.GetOpts().GetLeaderScheduleLimit()
 }
 
-func (l *balanceLeaderScheduler) Schedule(cluster opt.Cluster) []*operator.Operator {
+func (l *balanceLeaderScheduler) Schedule(cluster opt.Cluster) (ops []*operator.Operator) {
+	defer func() {
+		ops = nil
+	}()
 	if len(cluster.GetCopySets()) > 0 {
 		return nil
 	}

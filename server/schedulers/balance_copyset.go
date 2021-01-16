@@ -165,8 +165,13 @@ func (s *balanceCopySetScheduler) transferCopySet(cluster opt.Cluster, region *c
 		targetCS := csScore[i]
 		kind := core.NewScheduleKind(core.RegionKind, core.BySize)
 		tolerantResource := getTolerantResource(cluster, region, kind)
-		log.Info("balanceCopySetScheduler", zap.Int64("tolerantResource", tolerantResource))
 		if targetCS.score <= sourceCSSore.score+float64(tolerantResource) {
+			log.Info("balanceCopySetScheduler",
+				zap.Int64("tolerantResource", tolerantResource),
+				zap.Float64("targetCS score", targetCS.score),
+				zap.String("targetCS", targetCS.sign),
+				zap.String("sourceCS", sourceCSSore.sign),
+				zap.Float64("sourceCS score", sourceCSSore.score))
 			continue
 		}
 		if targetCS.sign == sourceCS.Sign() {

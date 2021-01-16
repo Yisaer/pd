@@ -170,15 +170,17 @@ func (h *hotScheduler) allowBalanceRegion(cluster opt.Cluster) bool {
 	return h.OpController.OperatorCount(operator.OpHotRegion) < cluster.GetOpts().GetHotRegionScheduleLimit()
 }
 
-func (h *hotScheduler) Schedule(cluster opt.Cluster) []*operator.Operator {
+func (h *hotScheduler) Schedule(cluster opt.Cluster) (ops []*operator.Operator) {
+	defer func() {
+		ops = nil
+	}()
 	schedulerCounter.WithLabelValues(h.GetName(), "schedule").Inc()
 	return h.dispatch(h.types[h.r.Int()%len(h.types)], cluster)
 }
 
-func (h *hotScheduler) dispatch(typ rwType, cluster opt.Cluster) []*operator.Operator {
+func (h *hotScheduler) dispatch(typ rwType, cluster opt.Cluster) (ops []*operator.Operator) {
 	h.Lock()
 	defer h.Unlock()
-
 	h.prepareForBalance(cluster)
 
 	switch typ {
