@@ -129,6 +129,7 @@ func createRouter(ctx context.Context, prefix string, svr *server.Server) *mux.R
 	clusterRouter.HandleFunc("/stores/limit", storesHandler.SetAllLimit).Methods("POST")
 	clusterRouter.HandleFunc("/stores/limit/scene", storesHandler.SetStoreLimitScene).Methods("POST")
 	clusterRouter.HandleFunc("/stores/limit/scene", storesHandler.GetStoreLimitScene).Methods("GET")
+	clusterRouter.HandleFunc("/stores/limit/scene", storesHandler.GetCopySets).Methods("GET")
 
 	labelsHandler := newLabelsHandler(svr, rd)
 	clusterRouter.HandleFunc("/labels", labelsHandler.Get).Methods("GET")

@@ -15,6 +15,7 @@ package api
 
 import (
 	"fmt"
+	"github.com/tikv/pd/pkg/copysets"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -598,6 +599,35 @@ func (h *storesHandler) GetStoreLimitScene(w http.ResponseWriter, r *http.Reques
 	}
 	scene := h.Handler.GetStoreLimitScene(typeValue)
 	h.rd.JSON(w, http.StatusOK, scene)
+}
+
+func (h *storesHandler) GetCopySets(w http.ResponseWriter, r *http.Request) {
+	rc := getCluster(r.Context())
+	css := rc.GetCopySets()
+	cssGroup := rc.GetCopySetsByGroups()
+	rs := make([]CopysetResponse, 0)
+	for group, css := range cssGroup {
+		r := CopysetResponse{
+			Group: group,
+			CSS:   css,
+		}
+		rs = append(rs, r)
+	}
+	res := CopysetGroupResponse{
+		CSS:      css,
+		Response: rs,
+	}
+	h.rd.JSON(w, http.StatusOK, res)
+}
+
+type CopysetGroupResponse struct {
+	CSS      []copysets.CopySet `json:"all-copysets"`
+	Response []CopysetResponse  `json:"group-copysets"`
+}
+
+type CopysetResponse struct {
+	Group string             `json:"group"`
+	CSS   []copysets.CopySet `json:"copysets"`
 }
 
 // @Tags store
