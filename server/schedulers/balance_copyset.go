@@ -164,6 +164,11 @@ func (s *balanceCopySetScheduler) transferCopySet(cluster opt.Cluster, region *c
 			log.Warn(fmt.Sprintf("targetCS equal to sourceCS %v", sourceCS.Sign()))
 			continue
 		}
+		kind := core.NewScheduleKind(core.RegionKind, core.BySize)
+		tolerantResource := getTolerantResource(cluster, region, kind)
+		if targetCS.score <= sourceCSSore.score+float64(tolerantResource) {
+			continue
+		}
 		op, err := operator.CreateMoveCopySetOperator("balance-copyset-scheduler", cluster, region, operator.OpRegion, targetCS.cs)
 		if err != nil {
 			log.Errorf(err.Error())
