@@ -46,7 +46,7 @@ func (s *balanceInGroupCopySetScheduler) GetType() string {
 }
 
 func (s *balanceInGroupCopySetScheduler) EncodeConfig() ([]byte, error) {
-	conf := &balanceCopySetSchedulerConfig{Name: "balance-copyset-scheduler"}
+	conf := &balanceCopySetSchedulerConfig{Name: "balance-ingroup-copyset-scheduler"}
 	return schedule.EncodeConfig(conf)
 }
 
@@ -55,6 +55,9 @@ func (s *balanceInGroupCopySetScheduler) IsScheduleAllowed(cluster opt.Cluster) 
 }
 
 func (s *balanceInGroupCopySetScheduler) Schedule(cluster opt.Cluster) []*operator.Operator {
+	if len(cluster.GetCopySets(toid(cluster.GetStores()))) < 1 {
+		return nil
+	}
 	stores := cluster.GetStores()
 	opts := cluster.GetOpts()
 	stores = filter.SelectSourceStores(stores, s.filters, opts)
@@ -95,10 +98,11 @@ func (s *balanceInGroupCopySetScheduler) Schedule(cluster opt.Cluster) []*operat
 			s3 := storesScore[n3]
 			log.Info("balanceInGroupCopySetScheduler",
 				zap.Int64("tolerantResource", tolerantResource),
-				zap.String("select CS", deltaCS.Sign()),
+				zap.String("deltaCS", deltaCS.Sign()),
 				zap.Float64("s1", s1),
 				zap.Float64("s2", s2),
-				zap.Float64("s3", s3))
+				zap.Float64("s3", s3),
+				zap.Float64("delta", delta))
 			continue
 		}
 
