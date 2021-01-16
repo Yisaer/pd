@@ -91,17 +91,18 @@ func (s *balanceInGroupCopySetScheduler) Schedule(cluster opt.Cluster) []*operat
 		sort.Slice(detalList, func(i, j int) bool {
 			return detalList[i].delta > detalList[j].delta
 		})
+		var cssSign = ""
 		for _, ds := range detalList {
 			selectRegion = selectRandRegionInCopySet(cluster, ds.cs)
 			if selectRegion == nil {
 				log.Info("balanceInGroupCopySetScheduler no select region", zap.String("sign", deltaCS.Sign()))
 				continue
 			}
+			cssSign = ds.sign
 			break
 		}
 		if selectRegion == nil {
 			log.Info("balanceInGroupCopySetScheduler no select region", zap.String("sign", sign))
-
 		}
 		kind := core.NewScheduleKind(core.RegionKind, core.BySize)
 		tolerantResource := getTolerantResource(cluster, selectRegion, kind)
