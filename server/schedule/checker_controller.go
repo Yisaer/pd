@@ -66,13 +66,14 @@ func (c *CheckerController) CheckRegion(region *core.RegionInfo) []*operator.Ope
 	// Don't check isRaftLearnerEnabled cause it maybe disable learner feature but there are still some learners to promote.
 	opController := c.opController
 
+	if op := c.copySetChecker.Check(region); op != nil {
+		return []*operator.Operator{op}
+	}
+
 	if op := c.jointStateChecker.Check(region); op != nil {
 		return []*operator.Operator{op}
 	}
 
-	if op := c.copySetChecker.Check(region); op != nil {
-		return []*operator.Operator{op}
-	}
 
 	if c.opts.IsPlacementRulesEnabled() {
 		if op := c.ruleChecker.Check(region); op != nil {

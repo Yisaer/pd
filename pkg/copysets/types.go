@@ -190,6 +190,19 @@ func (cs CopySet) GetNodesID() (uint64, uint64, uint64) {
 	return cs.nodes[0], cs.nodes[1], cs.nodes[2]
 }
 
+func (cs CopySet) Sign() string {
+	tmp := make([]int, len(cs.nodes))
+	for i, node := range cs.nodes {
+		tmp[i] = int(node)
+	}
+	sort.Ints(tmp)
+	var x []string
+	for _, t := range tmp {
+		x = append(x, fmt.Sprintf("%v", t))
+	}
+	return strings.Join(x, "-")
+}
+
 func isAlreadyStorePeer(region *core.RegionInfo, storeID uint64) bool {
 	for _, peer := range region.GetPeers() {
 		if peer.StoreId == storeID {

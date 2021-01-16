@@ -1,0 +1,1 @@
+ tiup playground --pd 1 --pd.binpath /Users/yisa/Downloads/Github/GoProject/src/github.com/pingcap/pd/bin/pd-server --kv 3 --db 1 --tiflash 0
