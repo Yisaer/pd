@@ -78,6 +78,7 @@ func (m *CopysetsManager) DelNode(nodeID uint64) {
 func (m *CopysetsManager) GenerateCopySets() []CopySet {
 	m.mu.RLock()
 	var groups []*Group
+	csGauge.WithLabelValues("copyset").Set(float64(len(m.mu.nodesID)))
 	if m.mu.nm == nil || len(m.mu.nodesID) < 15 {
 		return nil
 	}
