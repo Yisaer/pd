@@ -15,6 +15,7 @@ package simulator
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/pingcap/errors"
@@ -178,4 +179,15 @@ func (d *Driver) GetBootstrapInfo(r *RaftEngine) (*metapb.Store, *metapb.Region,
 		return nil, nil, errors.Errorf("bootstrap store %v not found", region.GetLeader().GetStoreId())
 	}
 	return store.Store, region.GetMeta(), nil
+}
+
+func (d *Driver) GetRegionsStoreInfo() {
+	for _, region := range d.raftEngine.regionsInfo.GetRegions() {
+		storesID := make([]uint64, 0, 0)
+		for _, peer := range region.GetPeers() {
+			storesID = append(storesID, peer.GetStoreId())
+		}
+		x := fmt.Sprintf("%v,%v,%v,%v", region.GetID(), storesID[0], storesID[1], storesID[2])
+		fmt.Println(x)
+	}
 }

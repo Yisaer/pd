@@ -174,6 +174,7 @@ EXIT:
 		}
 	}
 
+	driver.GetRegionsStoreInfo()
 	driver.Stop()
 	if len(clean) != 0 {
 		clean[0]()
