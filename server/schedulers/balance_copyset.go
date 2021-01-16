@@ -114,12 +114,18 @@ func (s *balanceCopySetScheduler) Schedule(cluster opt.Cluster) []*operator.Oper
 		s1, s2, s3 := sourceCS.GetNodesID()
 		regionsList := make([][]*core.RegionInfo, 0)
 		regionsList = append(regionsList, cluster.GetStoreRegions(s1))
+		//debug(s1, cluster.GetStoreRegions(s1))
 		regionsList = append(regionsList, cluster.GetStoreRegions(s2))
+		//debug(s2, cluster.GetStoreRegions(s2))
 		regionsList = append(regionsList, cluster.GetStoreRegions(s3))
+		//debug(s3, cluster.GetStoreRegions(s3))
 		commonRegions := findCommonRegions(regionsList)
+		if len(commonRegions) < 1 {
+			continue
+		}
 		for i := 0; i < balanceRegionRetryLimit; i++ {
 			selectRegion := commonRegions[rand.Intn(len(commonRegions))]
-			if op := s.transferCopySet(cluster, selectRegion, sourceCS, cssScore); op != nil {
+			if op := s.transferCopySet(cluster, selectRegion, source, cssScore); op != nil {
 				return []*operator.Operator{op}
 			}
 		}
@@ -127,10 +133,11 @@ func (s *balanceCopySetScheduler) Schedule(cluster opt.Cluster) []*operator.Oper
 	return nil
 }
 
-func (s *balanceCopySetScheduler) transferCopySet(cluster opt.Cluster, region *core.RegionInfo, sourceCS copysets.CopySet, csScore []copysetScore) *operator.Operator {
+func (s *balanceCopySetScheduler) transferCopySet(cluster opt.Cluster, region *core.RegionInfo, sourceCSSore copysetScore, csScore []copysetScore) *operator.Operator {
 	sort.Slice(csScore, func(i, j int) bool {
 		return csScore[i].score < csScore[j].score
 	})
+	sourceCS := sourceCSSore.cs
 	for _, targetCS := range csScore {
 		if targetCS.sign == sourceCS.Sign() {
 			log.Warn(fmt.Sprintf("targetCS equal to sourceCS %v", sourceCS.Sign()))
@@ -168,4 +175,13 @@ func findCommonRegions(regionsList [][]*core.RegionInfo) []*core.RegionInfo {
 		}
 	}
 	return commonRegions
+}
+
+func debug(storeID uint64, regions []*core.RegionInfo) {
+	var ids []uint64
+	ids = make([]uint64, 0, 0)
+	for _, region := range regions {
+		ids = append(ids, region.GetID())
+	}
+	fmt.Println(storeID, ids)
 }

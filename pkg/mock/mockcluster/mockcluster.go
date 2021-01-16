@@ -256,6 +256,7 @@ func (mc *Cluster) AddRegionStore(storeID uint64, regionCount int) {
 	mc.SetStoreLimit(storeID, storelimit.AddPeer, 60)
 	mc.SetStoreLimit(storeID, storelimit.RemovePeer, 60)
 	mc.PutStore(store)
+	mc.CopysetsManager.AddNode(storeID)
 }
 
 // AddRegionStoreWithLeader adds store with specified count of region and leader.
