@@ -141,6 +141,11 @@ func (s *balanceInGroupCopySetScheduler) Schedule(cluster opt.Cluster) []*operat
 			}
 			if op != nil {
 				ops = append(ops, op)
+			} else {
+				selectRegion.GetPeers()
+				log.Info("balanceInGroupCopySetScheduler no operator",
+					zap.String("tarCs", tarCs.Sign()),
+					zap.Uint64("regionID", selectRegion.GetID()))
 			}
 		} else {
 			log.Info("balanceInGroupCopySetScheduler no delta target found", zap.String("sign", sign))

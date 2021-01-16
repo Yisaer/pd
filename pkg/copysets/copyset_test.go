@@ -67,3 +67,13 @@ func (s *testManagerSuite) TestQQQQCopysetsManagerXXX(c *C) {
 		}
 	}
 }
+
+func (s *testManagerSuite) TestXXCopysetsManagerXXX(c *C) {
+	nodesID := make([]uint64, 0, 0)
+	for i := 1; i <= 15; i++ {
+		nodesID = append(nodesID, uint64(i))
+	}
+	cm := NewCopysetsManager(3, 6, []uint64{})
+	css := cm.GetCopysetsByGroup(nodesID)
+	fmt.Println(css)
+}

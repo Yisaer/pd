@@ -140,6 +140,7 @@ func (m *CopysetsManager) GetCopysetsByGroup(nowID []uint64) map[string][]CopySe
 	// TODO: we should provide copysets by incremental group instead of whole groups
 	if reset || len(m.mu.cacheGroup) < 1 {
 		m.mu.nodesID = sliceToMap(nowID)
+		m.mu.nm = NewNodeManager(m.R*m.cm.C, nowID)
 		groups = m.mu.nm.GetGroups()
 		if len(groups) < 1 {
 			return nil
