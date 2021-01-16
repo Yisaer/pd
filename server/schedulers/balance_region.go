@@ -131,9 +131,11 @@ func (s *balanceRegionScheduler) IsScheduleAllowed(cluster opt.Cluster) bool {
 
 func (s *balanceRegionScheduler) Schedule(cluster opt.Cluster) []*operator.Operator {
 	css := cluster.GetCopySets()
-	if len(css) < 1 {
+	if len(css) > 0 {
+		//fmt.Println("balanceRegionScheduler skip schedule")
 		return nil
 	}
+	//fmt.Println("balanceRegionScheduler scheduling")
 	schedulerCounter.WithLabelValues(s.GetName(), "schedule").Inc()
 	stores := cluster.GetStores()
 	opts := cluster.GetOpts()
@@ -148,7 +150,6 @@ func (s *balanceRegionScheduler) Schedule(cluster opt.Cluster) []*operator.Opera
 	})
 	for _, source := range stores {
 		sourceID := source.GetID()
-
 		for i := 0; i < balanceRegionRetryLimit; i++ {
 			// Priority pick the region that has a pending peer.
 			// Pending region may means the disk is overload, remove the pending region firstly.

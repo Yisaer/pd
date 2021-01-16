@@ -16,6 +16,7 @@ package simulator
 import (
 	"context"
 	"fmt"
+	"sort"
 	"sync"
 
 	"github.com/pingcap/errors"
@@ -182,12 +183,21 @@ func (d *Driver) GetBootstrapInfo(r *RaftEngine) (*metapb.Store, *metapb.Region,
 }
 
 func (d *Driver) GetRegionsStoreInfo() {
+	copyset := make(map[string]struct{})
 	for _, region := range d.raftEngine.regionsInfo.GetRegions() {
-		storesID := make([]uint64, 0, 0)
+		storesID := make([]int, 0, 0)
 		for _, peer := range region.GetPeers() {
-			storesID = append(storesID, peer.GetStoreId())
+			storesID = append(storesID, int(peer.GetStoreId()))
 		}
-		x := fmt.Sprintf("%v,%v,%v,%v", region.GetID(), storesID[0], storesID[1], storesID[2])
-		fmt.Println(x)
+		sort.Ints(storesID)
+		s := sign(storesID[0], storesID[1], storesID[2])
+		copyset[s] = struct{}{}
+		//x := fmt.Sprintf("%v,%v,%v,%v", region.GetID(), storesID[0], storesID[1], storesID[2])
+		//fmt.Println(x)
 	}
+	fmt.Println(len(copyset))
+}
+
+func sign(n1, n2, n3 int) string {
+	return fmt.Sprintf("%v-%v-%v", n1, n2, n3)
 }

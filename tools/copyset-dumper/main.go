@@ -7,7 +7,7 @@ import (
 
 func main() {
 
-	initialCount := 1000
+	initialCount := 100
 	nodesID := make([]uint64, 0, 0)
 	for i := 1; i <= initialCount; i++ {
 		nodesID = append(nodesID, uint64(i))

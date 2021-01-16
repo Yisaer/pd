@@ -15,7 +15,6 @@ package checker
 
 import (
 	"fmt"
-
 	"github.com/pingcap/kvproto/pkg/metapb"
 	"github.com/pingcap/log"
 	"github.com/tikv/pd/pkg/cache"
@@ -78,10 +77,10 @@ func (r *ReplicaChecker) Check(region *core.RegionInfo) *operator.Operator {
 		checkerCounter.WithLabelValues("replica_checker", "new-operator").Inc()
 		return op
 	}
-	if op := r.checkLocationReplacement(region); op != nil {
-		checkerCounter.WithLabelValues("replica_checker", "new-operator").Inc()
-		return op
-	}
+	//if op := r.checkLocationReplacement(region); op != nil {
+	//	checkerCounter.WithLabelValues("replica_checker", "new-operator").Inc()
+	//	return op
+	//}
 	return nil
 }
 
@@ -149,6 +148,18 @@ func (r *ReplicaChecker) checkMakeUpReplica(region *core.RegionInfo) *operator.O
 	}
 	log.Debug("region has fewer than max replicas", zap.Uint64("region-id", region.GetID()), zap.Int("peers", len(region.GetPeers())))
 	regionStores := r.cluster.GetRegionStores(region)
+	//var sourceCS copysets.CopySet
+	//find := false
+	//for _, cs := range r.cluster.GetCopySets() {
+	//	if cs.IsRegionSatisfied(region) {
+	//		find = true
+	//		sourceCS = cs
+	//	}
+	//}
+	//filters := make([]filter.Filter, 0)
+	//if find {
+	//	filters = append(filters, filter.NewCopySetFilter(sourceCS))
+	//}
 	target := r.strategy(region).SelectStoreToAdd(regionStores)
 	if target == 0 {
 		log.Debug("no store to add replica", zap.Uint64("region-id", region.GetID()))
@@ -230,6 +241,18 @@ func (r *ReplicaChecker) fixPeer(region *core.RegionInfo, storeID uint64, status
 		}
 		return op
 	}
+	//var sourceCS copysets.CopySet
+	//find := false
+	//for _, cs := range r.cluster.GetCopySets() {
+	//	if cs.IsRegionSatisfied(region) {
+	//		find = true
+	//		sourceCS = cs
+	//	}
+	//}
+	//filters := make([]filter.Filter, 0)
+	//if find {
+	//	filters = append(filters, filter.NewCopySetFilter(sourceCS))
+	//}
 
 	regionStores := r.cluster.GetRegionStores(region)
 	target := r.strategy(region).SelectStoreToReplace(regionStores, storeID)

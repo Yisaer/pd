@@ -50,12 +50,12 @@ func NewCopySetManager(R, S int) *CopySetManager {
 	return cm
 }
 
-func (cm *CopySetManager) GenerateCopySets(groups []*Group) []CopySet {
-	cs := make([]CopySet, 0, 0)
+func (cm *CopySetManager) GenerateCopySets(groups []*Group) map[string][]CopySet {
+	csg := make(map[string][]CopySet, 0)
 	for _, group := range groups {
-		cs = append(cs, cm.generateCopySetForGroup(group)...)
+		csg[group.sign()] = cm.generateCopySetForGroup(group)
 	}
-	return cs
+	return csg
 }
 
 func (cm *CopySetManager) generateCopySetForGroup(group *Group) []CopySet {

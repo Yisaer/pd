@@ -22,10 +22,11 @@ type CopysetsManager struct {
 	//nm      *NodeManager
 	mu struct {
 		sync.RWMutex
-		needGen bool
-		cache   []CopySet
-		nodesID map[uint64]struct{}
-		nm      *NodeManager
+		needGen    bool
+		cache      []CopySet
+		cacheGroup map[string][]CopySet
+		nodesID    map[uint64]struct{}
+		nm         *NodeManager
 	}
 }
 
@@ -74,19 +75,49 @@ func (m *CopysetsManager) DelNode(nodeID uint64) {
 
 func (m *CopysetsManager) GenerateCopySets() []CopySet {
 	m.mu.RLock()
-	defer m.mu.RUnlock()
+	var groups []*Group
 	if m.mu.nm == nil || len(m.mu.nodesID) < 15 {
 		return nil
 	}
 	if !m.mu.needGen {
 		return m.mu.cache
 	}
-	groups := m.mu.nm.GetGroups()
-	// TODO: we should provide copysets by incremental group instead of whole groups
-	copysets := m.cm.GenerateCopySets(groups)
-	m.mu.cache = copysets
+	groups = m.mu.nm.GetGroups()
+	m.mu.RUnlock()
+	groupCopysets := m.cm.GenerateCopySets(groups)
+	m.mu.cacheGroup = groupCopysets
+	m.mu.cache = merge(groupCopysets)
 	m.mu.needGen = false
-	return copysets
+	return m.mu.cache
+}
+
+func (m *CopysetsManager) GetCopysetsByGroup() map[string][]CopySet {
+	m.mu.RLock()
+	var groups []*Group
+	if m.mu.nm == nil || len(m.mu.nodesID) < 15 {
+		return nil
+	}
+	if !m.mu.needGen {
+		return m.mu.cacheGroup
+	}
+	groups = m.mu.nm.GetGroups()
+	m.mu.RUnlock()
+	// TODO: we should provide copysets by incremental group instead of whole groups
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	groupCopysets := m.cm.GenerateCopySets(groups)
+	m.mu.cacheGroup = groupCopysets
+	m.mu.cache = merge(groupCopysets)
+	m.mu.needGen = false
+	return groupCopysets
+}
+
+func merge(groupCopyset map[string][]CopySet) []CopySet {
+	c := make([]CopySet, 0, 0)
+	for _, css := range groupCopyset {
+		c = append(c, css...)
+	}
+	return c
 }
 
 func mapToSlice(m map[uint64]struct{}) []uint64 {

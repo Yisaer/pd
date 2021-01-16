@@ -69,38 +69,38 @@ func (c *CheckerController) CheckRegion(region *core.RegionInfo) []*operator.Ope
 	if op := c.copySetChecker.Check(region); op != nil {
 		return []*operator.Operator{op}
 	}
-
-	if op := c.jointStateChecker.Check(region); op != nil {
-		return []*operator.Operator{op}
-	}
-
-
-	if c.opts.IsPlacementRulesEnabled() {
-		if op := c.ruleChecker.Check(region); op != nil {
-
-			if opController.OperatorCount(operator.OpReplica) < c.opts.GetReplicaScheduleLimit() {
-				return []*operator.Operator{op}
-			}
-			c.regionWaitingList.Put(region.GetID(), nil)
-		}
-	} else {
-		if op := c.learnerChecker.Check(region); op != nil {
+	//
+	//if op := c.jointStateChecker.Check(region); op != nil {
+	//	return []*operator.Operator{op}
+	//}
+	//
+	//
+	//if c.opts.IsPlacementRulesEnabled() {
+	//	if op := c.ruleChecker.Check(region); op != nil {
+	//
+	//		if opController.OperatorCount(operator.OpReplica) < c.opts.GetReplicaScheduleLimit() {
+	//			return []*operator.Operator{op}
+	//		}
+	//		c.regionWaitingList.Put(region.GetID(), nil)
+	//	}
+	//} else {
+	//	if op := c.learnerChecker.Check(region); op != nil {
+	//		return []*operator.Operator{op}
+	//	}
+	if op := c.replicaChecker.Check(region); op != nil {
+		if opController.OperatorCount(operator.OpReplica) < c.opts.GetReplicaScheduleLimit() {
 			return []*operator.Operator{op}
 		}
-		if op := c.replicaChecker.Check(region); op != nil {
-			if opController.OperatorCount(operator.OpReplica) < c.opts.GetReplicaScheduleLimit() {
-				return []*operator.Operator{op}
-			}
-			c.regionWaitingList.Put(region.GetID(), nil)
-		}
+		c.regionWaitingList.Put(region.GetID(), nil)
 	}
-
-	if c.mergeChecker != nil && opController.OperatorCount(operator.OpMerge) < c.opts.GetMergeScheduleLimit() {
-		if ops := c.mergeChecker.Check(region); ops != nil {
-			// It makes sure that two operators can be added successfully altogether.
-			return ops
-		}
-	}
+	//}
+	//
+	//if c.mergeChecker != nil && opController.OperatorCount(operator.OpMerge) < c.opts.GetMergeScheduleLimit() {
+	//	if ops := c.mergeChecker.Check(region); ops != nil {
+	//		// It makes sure that two operators can be added successfully altogether.
+	//		return ops
+	//	}
+	//}
 	return nil
 }
 

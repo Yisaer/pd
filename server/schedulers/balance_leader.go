@@ -131,6 +131,9 @@ func (l *balanceLeaderScheduler) IsScheduleAllowed(cluster opt.Cluster) bool {
 }
 
 func (l *balanceLeaderScheduler) Schedule(cluster opt.Cluster) []*operator.Operator {
+	if len(cluster.GetCopySets()) > 0 {
+		return nil
+	}
 	schedulerCounter.WithLabelValues(l.GetName(), "schedule").Inc()
 
 	leaderSchedulePolicy := l.opController.GetLeaderSchedulePolicy()

@@ -22,6 +22,7 @@ import (
 	"github.com/tikv/pd/server/schedule/filter"
 	"github.com/tikv/pd/server/schedule/operator"
 	"github.com/tikv/pd/server/schedule/opt"
+	"math"
 	"math/rand"
 	"sort"
 )
@@ -76,6 +77,7 @@ func (s *balanceCopySetScheduler) IsScheduleAllowed(cluster opt.Cluster) bool {
 // TODO: implement balanceCopySetScheduler Schedule
 func (s *balanceCopySetScheduler) Schedule(cluster opt.Cluster) []*operator.Operator {
 	css := cluster.GetCopySets()
+	//fmt.Println("balanceCopySetScheduler Schedule", len(css))
 	stores := cluster.GetStores()
 	opts := cluster.GetOpts()
 	stores = filter.SelectSourceStores(stores, s.filters, opts)
@@ -91,19 +93,30 @@ func (s *balanceCopySetScheduler) Schedule(cluster opt.Cluster) []*operator.Oper
 	for _, cs := range css {
 		n1, n2, n3 := cs.GetNodesID()
 		score := float64(0)
+		minScore := math.MaxFloat64
 		if storesScore[n1] > score {
 			score = storesScore[n1]
+		}
+		if storesScore[n1] < minScore {
+			minScore = storesScore[n1]
 		}
 		if storesScore[n2] > score {
 			score = storesScore[n2]
 		}
+		if storesScore[n2] < minScore {
+			minScore = storesScore[n2]
+		}
 		if storesScore[n3] > score {
 			score = storesScore[n3]
 		}
+		if storesScore[n3] < minScore {
+			minScore = storesScore[n3]
+		}
 		cssScore = append(cssScore, copysetScore{
-			cs:    cs,
-			sign:  cs.Sign(),
-			score: score,
+			cs:       cs,
+			sign:     cs.Sign(),
+			score:    score,
+			minScore: minScore,
 		})
 	}
 	sort.Slice(cssScore, func(i, j int) bool {
@@ -111,6 +124,9 @@ func (s *balanceCopySetScheduler) Schedule(cluster opt.Cluster) []*operator.Oper
 	})
 	for _, source := range cssScore {
 		sourceCS := source.cs
+		if source.minScore < 1 {
+			continue
+		}
 		s1, s2, s3 := sourceCS.GetNodesID()
 		regionsList := make([][]*core.RegionInfo, 0)
 		regionsList = append(regionsList, cluster.GetStoreRegions(s1))
@@ -154,9 +170,10 @@ func (s *balanceCopySetScheduler) transferCopySet(cluster opt.Cluster, region *c
 }
 
 type copysetScore struct {
-	cs    copysets.CopySet
-	score float64
-	sign  string
+	cs       copysets.CopySet
+	score    float64
+	sign     string
+	minScore float64
 }
 
 func findCommonRegions(regionsList [][]*core.RegionInfo) []*core.RegionInfo {
@@ -184,4 +201,33 @@ func debug(storeID uint64, regions []*core.RegionInfo) {
 		ids = append(ids, region.GetID())
 	}
 	fmt.Println(storeID, ids)
+}
+
+func buildCopySetScore(s1, s2, s3 float64, cs copysets.CopySet) copysetScore {
+	score := float64(0)
+	minScore := math.MaxFloat64
+	if s1 > score {
+		score = s1
+	}
+	if s1 < minScore {
+		minScore = s1
+	}
+	if s2 > score {
+		score = s2
+	}
+	if s2 < minScore {
+		minScore = s2
+	}
+	if s3 > score {
+		score = s3
+	}
+	if s3 < minScore {
+		minScore = s3
+	}
+	return copysetScore{
+		cs:       cs,
+		score:    score,
+		minScore: minScore,
+		sign:     cs.Sign(),
+	}
 }

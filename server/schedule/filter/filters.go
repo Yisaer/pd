@@ -728,26 +728,49 @@ func createRegionForRuleFit(startKey, endKey []byte,
 	return cloneRegion
 }
 
-type copysetFilter struct {
-	scope         string
-	sourceCopySet copysets.CopySet
+type copysetSourceFilter struct {
+	scope  string
+	region *core.RegionInfo
+	css    []copysets.CopySet
 }
 
-func NewCopySetFilter(sourceCS copysets.CopySet) *copysetFilter {
-	return &copysetFilter{
-		scope:         "copyset-filter",
-		sourceCopySet: sourceCS,
+func NewCopySetSourceFilter(scope string, region *core.RegionInfo, css []copysets.CopySet) *copysetSourceFilter {
+	return &copysetSourceFilter{
+		scope:  scope,
+		region: region,
+		css:    css,
 	}
 }
 
-func (f *copysetFilter) Scope() string {
+func (f *copysetSourceFilter) Scope() string {
 	return f.scope
 }
 
-func (f *copysetFilter) Type() string {
+func (f *copysetSourceFilter) Type() string {
 	return "copyset-filter"
 }
 
-func (f *copysetFilter) Target(opt *config.PersistOptions, store *core.StoreInfo) bool {
-	return f.sourceCopySet.IsStoreInCopySet(store.GetID())
+func (f *copysetSourceFilter) Target(opt *config.PersistOptions, store *core.StoreInfo) bool {
+	return true
+}
+
+func (f *copysetSourceFilter) Source(opt *config.PersistOptions, store *core.StoreInfo) bool {
+	if len(f.region.GetPeers()) <= 3 {
+		return false
+	}
+	for _, cs := range f.css {
+		cnt := 0
+		for _, peer := range f.region.GetPeers() {
+			if peer.StoreId == store.GetID() {
+				continue
+			}
+			if cs.IsStoreInCopySet(peer.GetStoreId()) {
+				cnt = cnt + 1
+			}
+			if cnt >= 3 {
+				return true
+			}
+		}
+	}
+	return false
 }

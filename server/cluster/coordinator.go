@@ -313,6 +313,10 @@ func (c *coordinator) run() {
 			log.Info("skip create hot region scheduler")
 			continue
 		}
+		if cfg.Type != "balance-copyset-scheduler" {
+			continue
+		}
+
 		s, err := schedule.CreateScheduler(cfg.Type, c.opController, c.cluster.storage, schedule.ConfigJSONDecoder([]byte(data)))
 		if err != nil {
 			log.Error("can not create scheduler with independent configuration", zap.String("scheduler-name", name), zap.Strings("scheduler-args", cfg.Args), errs.ZapError(err))

@@ -71,8 +71,8 @@ func (s *ReplicaStrategy) SelectStoreToAdd(coLocationStores []*core.StoreInfo, e
 	strictStateFilter := &filter.StoreStateFilter{ActionScope: s.checkerName, MoveRegion: true}
 	target := filter.NewCandidates(s.cluster.GetStores()).
 		FilterTarget(s.cluster.GetOpts(), filters...).
-		Sort(isolationComparer).Reverse().Top(isolationComparer).        // greater isolation score is better
-		Sort(filter.RegionScoreComparer(s.cluster.GetOpts())).           // less region score is better
+		Sort(isolationComparer).Reverse().Top(isolationComparer). // greater isolation score is better
+		Sort(filter.RegionScoreComparer(s.cluster.GetOpts())). // less region score is better
 		FilterTarget(s.cluster.GetOpts(), strictStateFilter).PickFirst() // the filter does not ignore temp states
 	if target == nil {
 		return 0
@@ -82,7 +82,7 @@ func (s *ReplicaStrategy) SelectStoreToAdd(coLocationStores []*core.StoreInfo, e
 
 // SelectStoreToReplace returns a store to replace oldStore. The location
 // placement after scheduling should be not worse than original.
-func (s *ReplicaStrategy) SelectStoreToReplace(coLocationStores []*core.StoreInfo, old uint64) uint64 {
+func (s *ReplicaStrategy) SelectStoreToReplace(coLocationStores []*core.StoreInfo, old uint64, extraFilters ...filter.Filter) uint64 {
 	// trick to avoid creating a slice with `old` removed.
 	s.swapStoreToFirst(coLocationStores, old)
 	safeGuard := filter.NewLocationSafeguard(s.checkerName, s.locationLabels, coLocationStores, s.cluster.GetStore(old))
@@ -115,8 +115,9 @@ func (s *ReplicaStrategy) swapStoreToFirst(stores []*core.StoreInfo, id uint64) 
 // SelectStoreToRemove returns the best option to remove from the region.
 func (s *ReplicaStrategy) SelectStoreToRemove(coLocationStores []*core.StoreInfo) uint64 {
 	isolationComparer := filter.IsolationComparer(s.locationLabels, coLocationStores)
+	csSourceFilter := filter.NewCopySetSourceFilter(s.checkerName, s.region, s.cluster.GetCopySets())
 	source := filter.NewCandidates(coLocationStores).
-		FilterSource(s.cluster.GetOpts(), &filter.StoreStateFilter{ActionScope: replicaCheckerName, MoveRegion: true}).
+		FilterSource(s.cluster.GetOpts(), &filter.StoreStateFilter{ActionScope: replicaCheckerName, MoveRegion: true}, csSourceFilter).
 		Sort(isolationComparer).Top(isolationComparer).
 		Sort(filter.RegionScoreComparer(s.cluster.GetOpts())).Reverse().
 		PickFirst()

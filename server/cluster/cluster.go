@@ -917,6 +917,7 @@ func (c *RaftCluster) PutStore(store *metapb.Store) error {
 	}
 	c.OnStoreVersionChange()
 	c.AddStoreLimit(store)
+	fmt.Println("copyset AddNode", store.Id)
 	c.copySetsManager.AddNode(store.Id)
 	return nil
 }
@@ -1701,6 +1702,11 @@ func (c *RaftCluster) GetEtcdClient() *clientv3.Client {
 func (c *RaftCluster) GetCopySets() []copysets.CopySet {
 	return c.copySetsManager.GenerateCopySets()
 }
+
+func (c *RaftCluster) GetCopySetsByGroups() map[string][]copysets.CopySet {
+	return c.copySetsManager.GetCopysetsByGroup()
+}
+
 
 var healthURL = "/pd/api/v1/ping"
 
