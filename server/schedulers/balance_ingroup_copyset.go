@@ -46,7 +46,8 @@ func (s *balanceInGroupCopySetScheduler) GetType() string {
 }
 
 func (s *balanceInGroupCopySetScheduler) EncodeConfig() ([]byte, error) {
-	return nil, nil
+	conf := &balanceCopySetSchedulerConfig{Name: "balance-copyset-scheduler"}
+	return schedule.EncodeConfig(conf)
 }
 
 func (s *balanceInGroupCopySetScheduler) IsScheduleAllowed(cluster opt.Cluster) bool {
