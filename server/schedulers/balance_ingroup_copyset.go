@@ -68,7 +68,7 @@ func (s *balanceInGroupCopySetScheduler) Schedule(cluster opt.Cluster) []*operat
 	}
 	//groupCSScore := make(map[string][]copysetScore, 0)
 	ops := make([]*operator.Operator, 0)
-	for _, css := range cluster.GetCopySetsByGroups(toid(cluster.GetStores())) {
+	for sign, css := range cluster.GetCopySetsByGroups(toid(cluster.GetStores())) {
 		cssID := -1
 		delta := float64(0)
 		var deltaCS copysets.CopySet
@@ -82,6 +82,7 @@ func (s *balanceInGroupCopySetScheduler) Schedule(cluster opt.Cluster) []*operat
 			}
 		}
 		if cssID == -1 {
+			log.Info("balanceInGroupCopySetScheduler no delta found", zap.String("sign", sign))
 			continue
 		}
 		selectRegion := selectRandRegionInCopySet(cluster, deltaCS)
@@ -129,17 +130,24 @@ func (s *balanceInGroupCopySetScheduler) Schedule(cluster opt.Cluster) []*operat
 		if find {
 			op, err := operator.CreateMoveCopySetOperator(s.GetName(), cluster, selectRegion, operator.OpRegion, tarCs)
 			if err != nil {
-				log.Error("balanceInGroupCopySetScheduler schedule failed")
+				log.Error("balanceInGroupCopySetScheduler schedule failed",
+					zap.Error(err),
+					zap.String("deltaCS", deltaCS.Sign()))
 				continue
 			}
 			if op != nil {
 				ops = append(ops, op)
 			}
+		} else {
+			log.Info("balanceInGroupCopySetScheduler no delta target found", zap.String("sign", sign))
+			continue
 		}
 	}
 	if len(ops) > 0 {
+		log.Info("balanceInGroupCopySetScheduler", zap.Int("operatorCount", len(ops)))
 		return ops
 	}
+	log.Info("balanceInGroupCopySetScheduler no schedule")
 	return nil
 }
 
