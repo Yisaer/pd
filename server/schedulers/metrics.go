@@ -127,6 +127,14 @@ var copysetMinScoreGauge = prometheus.NewGaugeVec(
 		Help:      "Score for copyset",
 	}, []string{"type", "name"})
 
+var copySetDiffScoreGauge = prometheus.NewGaugeVec(
+	prometheus.GaugeOpts{
+		Namespace: "pd",
+		Subsystem: "scheduler",
+		Name:      "copyset_diff_score",
+		Help:      "diff Score for copyset",
+	}, []string{"type", "name"})
+
 func init() {
 	prometheus.MustRegister(schedulerCounter)
 	prometheus.MustRegister(schedulerStatus)
@@ -142,4 +150,5 @@ func init() {
 	prometheus.MustRegister(tolerantResourceStatus)
 	prometheus.MustRegister(copysetMaxScoreGauge)
 	prometheus.MustRegister(copysetMinScoreGauge)
+	prometheus.MustRegister(copySetDiffScoreGauge)
 }

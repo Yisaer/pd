@@ -14,9 +14,9 @@ import (
 )
 
 func init() {
-	//schedule.RegisterScheduler("balance-ingroup-copyset-scheduler", func(opController *schedule.OperatorController, storage *core.Storage, decoder schedule.ConfigDecoder) (schedule.Scheduler, error) {
-	//	return NewBalanceInGroupCopySetScheduler(opController), nil
-	//})
+	schedule.RegisterScheduler("balance-ingroup-copyset-scheduler", func(opController *schedule.OperatorController, storage *core.Storage, decoder schedule.ConfigDecoder) (schedule.Scheduler, error) {
+		return NewBalanceInGroupCopySetScheduler(opController), nil
+	})
 }
 
 type balanceInGroupCopySetScheduler struct {
@@ -108,19 +108,31 @@ func (s *balanceInGroupCopySetScheduler) Schedule(cluster opt.Cluster) []*operat
 		if storesScore[n3] < storesScore[minStoreID] {
 			minStoreID = n3
 		}
+		find := false
+		var tarCs copysets.CopySet
 		for id, cs := range css {
 			if id == cssID {
 				continue
 			}
+			maxD := math.MaxFloat64
 			if cs.IsStoreInCopySet(minStoreID) {
-				op, err := operator.CreateMoveCopySetOperator(s.GetName(), cluster, selectRegion, operator.OpRegion, cs)
-				if err != nil {
-					log.Error("balanceInGroupCopySetScheduler schedule failed")
-					continue
+				n1, n2, n3 := cs.GetNodesID()
+				d := caldelta(storesScore, n1, n2, n3)
+				if d < maxD {
+					maxD = d
+					find = true
+					tarCs = cs
 				}
-				if op != nil {
-					ops = append(ops, op)
-				}
+			}
+		}
+		if find {
+			op, err := operator.CreateMoveCopySetOperator(s.GetName(), cluster, selectRegion, operator.OpRegion, tarCs)
+			if err != nil {
+				log.Error("balanceInGroupCopySetScheduler schedule failed")
+				continue
+			}
+			if op != nil {
+				ops = append(ops, op)
 			}
 		}
 	}
@@ -176,4 +188,9 @@ func minAndMax(n ...float64) (float64, float64) {
 		}
 	}
 	return min, max
+}
+
+func caldelta(score map[uint64]float64, s1, s2, s3 uint64) float64 {
+	min, max := minAndMax(score[s1], score[s2], score[s3])
+	return max - min
 }

@@ -134,13 +134,14 @@ func (s *balanceCopySetScheduler) Schedule(cluster opt.Cluster) []*operator.Oper
 			minScore: minScore,
 		})
 	}
-	sort.Slice(cssScore, func(i, j int) bool {
-		return cssScore[i].score > cssScore[j].score
-	})
 	for _, csScore := range cssScore {
 		copysetMaxScoreGauge.WithLabelValues(s.GetType(), csScore.sign).Set(csScore.score)
 		copysetMinScoreGauge.WithLabelValues(s.GetType(), csScore.sign).Set(csScore.minScore)
+		copySetDiffScoreGauge.WithLabelValues(s.GetType(), csScore.sign).Set(csScore.score - csScore.minScore)
 	}
+	sort.Slice(cssScore, func(i, j int) bool {
+		return cssScore[i].score > cssScore[j].score
+	})
 
 	for i := 0; i < len(cssScore); i++ {
 		source := cssScore[i]
