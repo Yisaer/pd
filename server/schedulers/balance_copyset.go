@@ -128,8 +128,9 @@ func (s *balanceCopySetScheduler) Schedule(cluster opt.Cluster) []*operator.Oper
 		copysetMinScoreGauge.WithLabelValues(s.GetType(), csScore.sign).Set(csScore.minScore)
 	}
 
-	for _, source := range cssScore {
-		sourceCS := source.cs
+	for i := 0; i < len(cssScore); i++ {
+		source := cssScore[i]
+		sourceCS := cssScore[i].cs
 		if source.minScore < 1 {
 			continue
 		}
@@ -160,7 +161,8 @@ func (s *balanceCopySetScheduler) transferCopySet(cluster opt.Cluster, region *c
 		return csScore[i].score < csScore[j].score
 	})
 	sourceCS := sourceCSSore.cs
-	for _, targetCS := range csScore {
+	for i := 0; i < len(csScore); i++ {
+		targetCS := csScore[i]
 		if targetCS.sign == sourceCS.Sign() {
 			log.Warn(fmt.Sprintf("targetCS equal to sourceCS %v", sourceCS.Sign()))
 			continue
