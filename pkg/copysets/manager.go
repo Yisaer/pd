@@ -84,9 +84,10 @@ func (m *CopysetsManager) DelNode(nodeID uint64) {
 }
 
 func (m *CopysetsManager) GenerateCopySets(nowID []uint64) []CopySet {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	reset := false
 	var groups []*Group
-	m.mu.RLock()
 	csGauge.WithLabelValues("generate").Set(float64(len(m.mu.nodesID)))
 	if m.mu.nm == nil || len(m.mu.nodesID) < 15 {
 		if len(nowID) >= 15 {
@@ -95,9 +96,6 @@ func (m *CopysetsManager) GenerateCopySets(nowID []uint64) []CopySet {
 	} else if m.mu.cache != nil {
 		return m.mu.cache
 	}
-	m.mu.RUnlock()
-	m.mu.Lock()
-	defer m.mu.Unlock()
 	if reset {
 		m.mu.nm = NewNodeManager(m.R*m.cm.C, nowID)
 		groups = m.mu.nm.GetGroups()
@@ -110,9 +108,10 @@ func (m *CopysetsManager) GenerateCopySets(nowID []uint64) []CopySet {
 }
 
 func (m *CopysetsManager) GetCopysetsByGroup(nowID []uint64) map[string][]CopySet {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	reset := false
 	var groups []*Group
-	m.mu.RLock()
 	csGauge.WithLabelValues("by_group").Set(float64(len(m.mu.nodesID)))
 	if m.mu.nm == nil || len(m.mu.nodesID) < 15 {
 		if len(nowID) >= 15 {
@@ -122,10 +121,7 @@ func (m *CopysetsManager) GetCopysetsByGroup(nowID []uint64) map[string][]CopySe
 	if m.mu.cacheGroup != nil {
 		return m.mu.cacheGroup
 	}
-	m.mu.RUnlock()
 	// TODO: we should provide copysets by incremental group instead of whole groups
-	m.mu.Lock()
-	defer m.mu.Unlock()
 	if reset {
 		groups = m.mu.nm.GetGroups()
 		groupCopysets := m.cm.GenerateCopySets(groups)
