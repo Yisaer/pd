@@ -336,14 +336,14 @@ func (c *coordinator) run() {
 		}
 	}
 
-	s, err = schedule.CreateScheduler("balance-ingroup-copyset-scheduler", c.opController, c.cluster.storage, nil)
-	if err != nil {
-		log.Error("create copyset scheduler failed")
-	} else {
-		if err := c.addScheduler(s); err != nil {
-			log.Error("add copyset scheduler failed")
-		}
-	}
+	//s, err = schedule.CreateScheduler("balance-ingroup-copyset-scheduler", c.opController, c.cluster.storage, nil)
+	//if err != nil {
+	//	log.Error("create copyset scheduler failed")
+	//} else {
+	//	if err := c.addScheduler(s); err != nil {
+	//		log.Error("add copyset scheduler failed")
+	//	}
+	//}
 
 	// The old way to create the scheduler.
 	k := 0

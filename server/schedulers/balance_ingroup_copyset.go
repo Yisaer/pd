@@ -14,9 +14,9 @@ import (
 )
 
 func init() {
-	schedule.RegisterScheduler("balance-ingroup-copyset-scheduler", func(opController *schedule.OperatorController, storage *core.Storage, decoder schedule.ConfigDecoder) (schedule.Scheduler, error) {
-		return NewBalanceInGroupCopySetScheduler(opController), nil
-	})
+	//schedule.RegisterScheduler("balance-ingroup-copyset-scheduler", func(opController *schedule.OperatorController, storage *core.Storage, decoder schedule.ConfigDecoder) (schedule.Scheduler, error) {
+	//	return NewBalanceInGroupCopySetScheduler(opController), nil
+	//})
 }
 
 type balanceInGroupCopySetScheduler struct {

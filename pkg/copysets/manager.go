@@ -13,7 +13,9 @@
 
 package copysets
 
-import "sync"
+import (
+	"sync"
+)
 
 type CopysetsManager struct {
 	R int
@@ -93,10 +95,11 @@ func (m *CopysetsManager) GenerateCopySets(nowID []uint64) []CopySet {
 		if len(nowID) >= 15 {
 			reset = true
 		}
-	} else if m.mu.cache != nil {
+	} else if len(m.mu.cache) > 0 {
 		return m.mu.cache
 	}
-	if reset {
+	if reset || len(m.mu.cache) < 1 {
+		m.mu.nodesID = sliceToMap(nowID)
 		m.mu.nm = NewNodeManager(m.R*m.cm.C, nowID)
 		groups = m.mu.nm.GetGroups()
 		groupCopysets := m.cm.GenerateCopySets(groups)
@@ -118,15 +121,17 @@ func (m *CopysetsManager) GetCopysetsByGroup(nowID []uint64) map[string][]CopySe
 			reset = true
 		}
 	}
-	if m.mu.cacheGroup != nil {
+	if len(m.mu.cacheGroup) > 1 {
 		return m.mu.cacheGroup
 	}
 	// TODO: we should provide copysets by incremental group instead of whole groups
-	if reset {
+	if reset || len(m.mu.cacheGroup) < 1 {
+		m.mu.nodesID = sliceToMap(nowID)
 		groups = m.mu.nm.GetGroups()
 		groupCopysets := m.cm.GenerateCopySets(groups)
 		m.mu.cacheGroup = groupCopysets
 		m.mu.cache = merge(groupCopysets)
+		return m.mu.cacheGroup
 	}
 	return nil
 }

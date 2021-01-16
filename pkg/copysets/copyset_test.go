@@ -49,8 +49,8 @@ func (s *testManagerSuite) TestQQQQCopysetsManagerXXX(c *C) {
 	for i := 1; i <= 15; i++ {
 		nodesID = append(nodesID, uint64(i))
 	}
-	cm := NewCopysetsManager(3, 6, nodesID)
-	css := cm.GenerateCopySets()
+	cm := NewCopysetsManager(3, 6, []uint64{})
+	css := cm.GenerateCopySets(nodesID)
 	x := make(map[uint64]struct{})
 	for _, cs := range css {
 		if cs.IsStoreInCopySet(uint64(1)) {

@@ -88,6 +88,9 @@ func (s *balanceCopySetScheduler) Schedule(cluster opt.Cluster) []*operator.Oper
 	css := cluster.GetCopySets(toid(cluster.GetStores()))
 	//fmt.Println("balanceCopySetScheduler Schedule", len(css))
 	stores := cluster.GetStores()
+	//log.Info("balanceCopySetScheduler",
+	//	zap.Int("copyset Length", len(css)),
+	//	zap.Int("stores", len(stores)))
 	opts := cluster.GetOpts()
 	stores = filter.SelectSourceStores(stores, s.filters, opts)
 	opInfluence := s.opController.GetOpInfluence(cluster)
