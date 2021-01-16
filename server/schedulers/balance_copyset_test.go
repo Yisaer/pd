@@ -54,10 +54,12 @@ func (s *testBalanceCopysetSuite) TestBalanceCopySet(c *C) {
 	tc.SetTolerantSizeRatio(2.5)
 	// Add stores 1,2,3,4,5.
 	storeCount := 30
+	x := make([]uint64, 0, 0)
 	for i := 1; i <= storeCount; i++ {
 		tc.AddRegionStore(uint64(i), 0)
+		x = append(x, uint64(i))
 	}
-	cs := tc.GetCopySets()
+	cs := tc.GetCopySets(x)
 	c.Assert(len(cs), Equals, 30)
 	var (
 		id      uint64
@@ -112,7 +114,7 @@ func (s *testBalanceCopysetSuite) TestBalanceCopySet(c *C) {
 	//	debug(storeID,x)
 	//}
 	oc := schedule.NewOperatorController(s.ctx, nil, nil)
-	hb, err := schedule.CreateScheduler("balance-copyset-scheduler", oc, core.NewStorage(kv.NewMemoryKV()), schedule.ConfigSliceDecoder("balance-copyset-scheduler", []string{"s_00", "s_09", "t"}))
+	hb, err := schedule.CreateScheduler("balance-ingroup-copyset-scheduler", oc, core.NewStorage(kv.NewMemoryKV()), schedule.ConfigSliceDecoder("balance-copyset-scheduler", []string{"s_00", "s_09", "t"}))
 	c.Assert(err, IsNil)
 	limit := 0
 	for {

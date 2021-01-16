@@ -73,6 +73,9 @@ func (s *balanceInGroupCopySetScheduler) Schedule(cluster opt.Cluster) []*operat
 	//groupCSScore := make(map[string][]copysetScore, 0)
 	ops := make([]*operator.Operator, 0)
 	m := cluster.GetCopySetsByGroups(toid(cluster.GetStores()))
+	if len(m) < 1 {
+		return nil
+	}
 	for sign, css := range m {
 		delta := float64(0)
 		var deltaCS copysets.CopySet
@@ -103,6 +106,7 @@ func (s *balanceInGroupCopySetScheduler) Schedule(cluster opt.Cluster) []*operat
 		}
 		if selectRegion == nil {
 			log.Info("balanceInGroupCopySetScheduler no select region", zap.String("sign", sign))
+			continue
 		}
 		kind := core.NewScheduleKind(core.RegionKind, core.BySize)
 		tolerantResource := getTolerantResource(cluster, selectRegion, kind)

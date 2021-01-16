@@ -694,6 +694,10 @@ func (mc *Cluster) GetCopySets(x []uint64) []copysets.CopySet {
 	return mc.CopysetsManager.GenerateCopySets(x)
 }
 
+func (mc *Cluster) GetCopySetsByGroups(x []uint64) map[string][]copysets.CopySet {
+	return mc.CopysetsManager.GetCopysetsByGroup(x)
+}
+
 // PutStoreWithLabels mocks method.
 func (mc *Cluster) PutStoreWithLabelsInCopySets(id uint64, labelPairs ...string) {
 	labels := make(map[string]string)
