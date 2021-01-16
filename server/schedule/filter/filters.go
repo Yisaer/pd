@@ -19,6 +19,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/pingcap/kvproto/pkg/metapb"
 	"github.com/pingcap/log"
+	"github.com/tikv/pd/pkg/copysets"
 	"github.com/tikv/pd/pkg/slice"
 	"github.com/tikv/pd/server/config"
 	"github.com/tikv/pd/server/core"
@@ -725,4 +726,28 @@ func createRegionForRuleFit(startKey, endKey []byte,
 		Peers:    copyPeers,
 	}, copyLeader, opts...)
 	return cloneRegion
+}
+
+type copysetFilter struct {
+	scope         string
+	sourceCopySet copysets.CopySet
+}
+
+func NewCopySetFilter(sourceCS copysets.CopySet) *copysetFilter {
+	return &copysetFilter{
+		scope:         "copyset-filter",
+		sourceCopySet: sourceCS,
+	}
+}
+
+func (f *copysetFilter) Scope() string {
+	return f.scope
+}
+
+func (f *copysetFilter) Type() string {
+	return "copyset-filter"
+}
+
+func (f *copysetFilter) Target(opt *config.PersistOptions, store *core.StoreInfo) bool {
+	return f.sourceCopySet.IsStoreInCopySet(store.GetID())
 }

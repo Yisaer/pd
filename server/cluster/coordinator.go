@@ -309,6 +309,10 @@ func (c *coordinator) run() {
 			log.Info("skip create scheduler with independent configuration", zap.String("scheduler-name", name), zap.String("scheduler-type", cfg.Type), zap.Strings("scheduler-args", cfg.Args))
 			continue
 		}
+		if cfg.Type == "hot-region" {
+			log.Info("skip create hot region scheduler")
+			continue
+		}
 		s, err := schedule.CreateScheduler(cfg.Type, c.opController, c.cluster.storage, schedule.ConfigJSONDecoder([]byte(data)))
 		if err != nil {
 			log.Error("can not create scheduler with independent configuration", zap.String("scheduler-name", name), zap.Strings("scheduler-args", cfg.Args), errs.ZapError(err))
@@ -317,6 +321,14 @@ func (c *coordinator) run() {
 		log.Info("create scheduler with independent configuration", zap.String("scheduler-name", s.GetName()))
 		if err = c.addScheduler(s); err != nil {
 			log.Error("can not add scheduler with independent configuration", zap.String("scheduler-name", s.GetName()), zap.Strings("scheduler-args", cfg.Args), errs.ZapError(err))
+		}
+	}
+	s, err := schedule.CreateScheduler("balance-copyset-scheduler", c.opController, c.cluster.storage, nil)
+	if err != nil {
+		log.Error("create copyset scheduler failed")
+	} else {
+		if err := c.addScheduler(s); err != nil {
+			log.Error("add copyset scheduler failed")
 		}
 	}
 

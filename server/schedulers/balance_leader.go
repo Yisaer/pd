@@ -92,7 +92,7 @@ func newBalanceLeaderScheduler(opController *schedule.OperatorController, conf *
 	}
 	s.filters = []filter.Filter{
 		&filter.StoreStateFilter{ActionScope: s.GetName(), TransferLeader: true},
-		filter.NewSpecialUseFilter(s.GetName()),
+		//filter.NewSpecialUseFilter(s.GetName()),
 	}
 	return s
 }
@@ -197,6 +197,18 @@ func (l *balanceLeaderScheduler) transferLeaderOut(cluster opt.Cluster, source *
 		schedulerCounter.WithLabelValues(l.GetName(), "no-leader-region").Inc()
 		return nil
 	}
+	if len(cluster.GetCopySets()) > 0 {
+		valid := false
+		for _, cs := range cluster.GetCopySets() {
+			if cs.IsRegionSatisfied(region) {
+				valid = true
+			}
+		}
+		if !valid {
+			return nil
+		}
+
+	}
 	targets := cluster.GetFollowerStores(region)
 	finalFilters := l.filters
 	if leaderFilter := filter.NewPlacementLeaderSafeguard(l.GetName(), cluster, region, source); leaderFilter != nil {
@@ -231,6 +243,17 @@ func (l *balanceLeaderScheduler) transferLeaderIn(cluster opt.Cluster, target *c
 		schedulerCounter.WithLabelValues(l.GetName(), "no-follower-region").Inc()
 		return nil
 	}
+	if len(cluster.GetCopySets()) > 0 {
+		valid := false
+		for _, cs := range cluster.GetCopySets() {
+			if cs.IsRegionSatisfied(region) {
+				valid = true
+			}
+		}
+		if !valid {
+			return nil
+		}
+	}
 	leaderStoreID := region.GetLeader().GetStoreId()
 	source := cluster.GetStore(leaderStoreID)
 	if source == nil {
@@ -246,9 +269,10 @@ func (l *balanceLeaderScheduler) transferLeaderIn(cluster opt.Cluster, target *c
 		target,
 	}
 	finalFilters := l.filters
-	if leaderFilter := filter.NewPlacementLeaderSafeguard(l.GetName(), cluster, region, source); leaderFilter != nil {
-		finalFilters = append(l.filters, leaderFilter)
-	}
+	//if leaderFilter := filter.NewPlacementLeaderSafeguard(l.GetName(), cluster, region, source); leaderFilter != nil {
+	//	finalFilters = append(l.filters, leaderFilter)
+	//}
+	//finalFilters = append(finalFilters, filter.NewCopySetFilter())
 	targets = filter.SelectTargetStores(targets, finalFilters, cluster.GetOpts())
 	if len(targets) < 1 {
 		log.Debug("region has no target store", zap.String("scheduler", l.GetName()), zap.Uint64("region-id", region.GetID()))
