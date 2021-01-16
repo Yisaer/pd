@@ -22,7 +22,7 @@ type CopysetsManager struct {
 	//nm      *NodeManager
 	mu struct {
 		sync.RWMutex
-		needGen    bool
+		needChange bool
 		cache      []CopySet
 		cacheGroup map[string][]CopySet
 		nodesID    map[uint64]struct{}
@@ -46,7 +46,9 @@ func NewCopysetsManager(R, S int, nodesID []uint64) *CopysetsManager {
 	if len(nodesID) >= 15 {
 		manager.mu.nm = NewNodeManager(R*cm.C, nodesID)
 	}
-	manager.mu.needGen = true
+	manager.mu.needChange = true
+	manager.mu.cacheGroup = nil
+	manager.mu.cache = nil
 	return manager
 }
 
@@ -60,7 +62,7 @@ func (m *CopysetsManager) AddNode(nodeID uint64) {
 	if len(m.mu.nodesID) >= 15 {
 		m.mu.nm = NewNodeManager(m.R*m.cm.C, mapToSlice(m.mu.nodesID))
 	}
-	m.mu.needGen = true
+	m.mu.needChange = true
 }
 
 func (m *CopysetsManager) DelNode(nodeID uint64) {
@@ -70,7 +72,7 @@ func (m *CopysetsManager) DelNode(nodeID uint64) {
 	if m.mu.nm != nil {
 		m.DelNode(nodeID)
 	}
-	m.mu.needGen = true
+	m.mu.needChange = true
 }
 
 func (m *CopysetsManager) GenerateCopySets() []CopySet {
@@ -79,7 +81,7 @@ func (m *CopysetsManager) GenerateCopySets() []CopySet {
 	if m.mu.nm == nil || len(m.mu.nodesID) < 15 {
 		return nil
 	}
-	if !m.mu.needGen {
+	if m.mu.cache != nil {
 		return m.mu.cache
 	}
 	groups = m.mu.nm.GetGroups()
@@ -87,7 +89,6 @@ func (m *CopysetsManager) GenerateCopySets() []CopySet {
 	groupCopysets := m.cm.GenerateCopySets(groups)
 	m.mu.cacheGroup = groupCopysets
 	m.mu.cache = merge(groupCopysets)
-	m.mu.needGen = false
 	return m.mu.cache
 }
 
@@ -97,7 +98,7 @@ func (m *CopysetsManager) GetCopysetsByGroup() map[string][]CopySet {
 	if m.mu.nm == nil || len(m.mu.nodesID) < 15 {
 		return nil
 	}
-	if !m.mu.needGen {
+	if m.mu.cacheGroup != nil {
 		return m.mu.cacheGroup
 	}
 	groups = m.mu.nm.GetGroups()
@@ -108,7 +109,6 @@ func (m *CopysetsManager) GetCopysetsByGroup() map[string][]CopySet {
 	groupCopysets := m.cm.GenerateCopySets(groups)
 	m.mu.cacheGroup = groupCopysets
 	m.mu.cache = merge(groupCopysets)
-	m.mu.needGen = false
 	return groupCopysets
 }
 
