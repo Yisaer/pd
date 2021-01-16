@@ -88,12 +88,17 @@ func (m *CopysetsManager) DelNode(nodeID uint64) {
 func (m *CopysetsManager) GenerateCopySets(nowID []uint64) []CopySet {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	if len(nowID) < 15 {
+		return nil
+	}
 	reset := false
 	var groups []*Group
 	csGauge.WithLabelValues("generate").Set(float64(len(m.mu.nodesID)))
 	if m.mu.nm == nil || len(m.mu.nodesID) < 15 {
 		if len(nowID) >= 15 {
 			reset = true
+		} else {
+			return nil
 		}
 	} else if len(m.mu.cache) > 0 {
 		return m.mu.cache
@@ -116,12 +121,17 @@ func (m *CopysetsManager) GenerateCopySets(nowID []uint64) []CopySet {
 func (m *CopysetsManager) GetCopysetsByGroup(nowID []uint64) map[string][]CopySet {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	if len(nowID) < 15 {
+		return nil
+	}
 	reset := false
 	var groups []*Group
 	csGauge.WithLabelValues("by_group").Set(float64(len(m.mu.nodesID)))
 	if m.mu.nm == nil || len(m.mu.nodesID) < 15 {
 		if len(nowID) >= 15 {
 			reset = true
+		} else {
+			return nil
 		}
 	}
 	if len(m.mu.cacheGroup) > 1 {

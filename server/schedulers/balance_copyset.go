@@ -86,6 +86,9 @@ func toid(s []*core.StoreInfo) []uint64 {
 // TODO: implement balanceCopySetScheduler Schedule
 func (s *balanceCopySetScheduler) Schedule(cluster opt.Cluster) []*operator.Operator {
 	css := cluster.GetCopySets(toid(cluster.GetStores()))
+	if len(css) < 1 {
+		return nil
+	}
 	//fmt.Println("balanceCopySetScheduler Schedule", len(css))
 	stores := cluster.GetStores()
 	//log.Info("balanceCopySetScheduler",
