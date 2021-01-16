@@ -14,10 +14,10 @@
 package copysets
 
 import (
+	"fmt"
+
 	. "github.com/pingcap/check"
 )
-
-var _ = Suite(&testManagerSuite{})
 
 func (s *testManagerSuite) TestOrder(c *C) {
 	row := []uint64{
@@ -42,4 +42,28 @@ func (s *testManagerSuite) TestOrder(c *C) {
 		{4, 1, 3, 5, 2},
 		{5, 2, 4, 1, 3},
 	})
+}
+
+func (s *testManagerSuite) TestQQQQCopysetsManagerXXX(c *C) {
+	nodesID := make([]uint64, 0, 0)
+	for i := 1; i <= 15; i++ {
+		nodesID = append(nodesID, uint64(i))
+	}
+	cm := NewCopysetsManager(3, 6, nodesID)
+	css := cm.GenerateCopySets()
+	x := make(map[uint64]struct{})
+	for _, cs := range css {
+		if cs.IsStoreInCopySet(uint64(1)) {
+			n1, n2, n3 := cs.GetNodesID()
+			x[n1] = struct{}{}
+			x[n2] = struct{}{}
+			x[n3] = struct{}{}
+			fmt.Println(cs.Sign())
+		}
+	}
+	for k := range x {
+		if k != 1 {
+			fmt.Println(k)
+		}
+	}
 }
