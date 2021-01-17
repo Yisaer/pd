@@ -327,23 +327,23 @@ func (c *coordinator) run() {
 			log.Error("can not add scheduler with independent configuration", zap.String("scheduler-name", s.GetName()), zap.Strings("scheduler-args", cfg.Args), errs.ZapError(err))
 		}
 	}
-	s, err := schedule.CreateScheduler("balance-copyset-scheduler", c.opController, c.cluster.storage, nil)
-	if err != nil {
-		log.Error("create copyset scheduler failed")
-	} else {
-		if err := c.addScheduler(s); err != nil {
-			log.Error("add copyset scheduler failed")
-		}
-	}
-
-	s, err = schedule.CreateScheduler("balance-ingroup-copyset-scheduler", c.opController, c.cluster.storage, nil)
-	if err != nil {
-		log.Error("create copyset scheduler failed")
-	} else {
-		if err := c.addScheduler(s); err != nil {
-			log.Error("add copyset scheduler failed")
-		}
-	}
+	//s, err := schedule.CreateScheduler("balance-copyset-scheduler", c.opController, c.cluster.storage, nil)
+	//if err != nil {
+	//	log.Error("create copyset scheduler failed")
+	//} else {
+	//	if err := c.addScheduler(s); err != nil {
+	//		log.Error("add copyset scheduler failed")
+	//	}
+	//}
+	//
+	//s, err = schedule.CreateScheduler("balance-ingroup-copyset-scheduler", c.opController, c.cluster.storage, nil)
+	//if err != nil {
+	//	log.Error("create copyset scheduler failed")
+	//} else {
+	//	if err := c.addScheduler(s); err != nil {
+	//		log.Error("add copyset scheduler failed")
+	//	}
+	//}
 
 	// The old way to create the scheduler.
 	k := 0

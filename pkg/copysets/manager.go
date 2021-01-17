@@ -90,7 +90,7 @@ func (m *CopysetsManager) GenerateCopySets(nowID []uint64) []CopySet {
 		} else {
 			return nil
 		}
-	}else if m.mu.needChange {
+	} else if m.mu.needChange {
 		groups = m.mu.nm.GetGroups()
 		if len(groups) < 1 {
 			return nil
@@ -98,6 +98,11 @@ func (m *CopysetsManager) GenerateCopySets(nowID []uint64) []CopySet {
 		groupCopysets := m.cm.GenerateCopySets(groups)
 		m.mu.cacheGroup = groupCopysets
 		m.mu.cache = merge(groupCopysets)
+		m.mu.needChange = false
+		for _, cs := range m.mu.cache {
+			copySetGauge.WithLabelValues(cs.Sign()).Set(1)
+		}
+		csGauge.WithLabelValues("").Set(float64(len(m.mu.cache)))
 		return m.mu.cache
 	} else if len(m.mu.cache) > 0 {
 		x := m.mu.cache
@@ -137,6 +142,16 @@ func (m *CopysetsManager) GetCopysetsByGroup(nowID []uint64) map[string][]CopySe
 		} else {
 			return nil
 		}
+	} else if m.mu.needChange {
+		groups = m.mu.nm.GetGroups()
+		if len(groups) < 1 {
+			return nil
+		}
+		groupCopysets := m.cm.GenerateCopySets(groups)
+		m.mu.cacheGroup = groupCopysets
+		m.mu.cache = merge(groupCopysets)
+		m.mu.needChange = false
+		return m.mu.cacheGroup
 	} else if len(m.mu.cache) > 0 {
 		return m.mu.cacheGroup
 	}
