@@ -90,6 +90,15 @@ func (m *CopysetsManager) GenerateCopySets(nowID []uint64) []CopySet {
 		} else {
 			return nil
 		}
+	}else if m.mu.needChange {
+		groups = m.mu.nm.GetGroups()
+		if len(groups) < 1 {
+			return nil
+		}
+		groupCopysets := m.cm.GenerateCopySets(groups)
+		m.mu.cacheGroup = groupCopysets
+		m.mu.cache = merge(groupCopysets)
+		return m.mu.cache
 	} else if len(m.mu.cache) > 0 {
 		x := m.mu.cache
 		for _, cs := range m.mu.cache {
