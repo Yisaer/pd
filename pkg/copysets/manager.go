@@ -99,9 +99,6 @@ func (m *CopysetsManager) GenerateCopySets(nowID []uint64) []CopySet {
 		m.mu.cacheGroup = groupCopysets
 		m.mu.cache = merge(groupCopysets)
 		m.mu.needChange = false
-		for _, cs := range m.mu.cache {
-			copySetGauge.WithLabelValues(cs.Sign()).Set(1)
-		}
 		csGauge.WithLabelValues("").Set(float64(len(m.mu.cache)))
 		return m.mu.cache
 	} else if len(m.mu.cache) > 0 {
