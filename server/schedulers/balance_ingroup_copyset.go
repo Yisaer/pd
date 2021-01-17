@@ -182,7 +182,8 @@ func (s *balanceInGroupCopySetScheduler) Schedule(cluster opt.Cluster) []*operat
 
 func selectRandRegionInCopySet(cluster opt.Cluster, cs copysets.CopySet) *core.RegionInfo {
 	n1, n2, n3 := cs.GetNodesID()
-	//log.Info("selectRandRegionInCopySet",zap.Uint64s("n1",n1))
+	log.Info("selectRandRegionInCopySet",zap.Uint64("n1",n1),
+		zap.Uint64("n2",n2),zap.Uint64("n3",n3))
 	cnt := make(map[uint64]int, 0)
 	r1 := cluster.GetStoreRegions(n1)
 	r2 := cluster.GetStoreRegions(n2)

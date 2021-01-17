@@ -177,6 +177,9 @@ func (s *balanceCopySetScheduler) transferCopySet(cluster opt.Cluster, region *c
 	sourceCS := sourceCSSore.cs
 	for i := 0; i < len(csScore); i++ {
 		targetCS := csScore[i]
+		if haveCommonNode(sourceCS, targetCS.cs) {
+			continue
+		}
 		kind := core.NewScheduleKind(core.RegionKind, core.BySize)
 		tolerantResource := getTolerantResource(cluster, region, kind)
 		if targetCS.score+float64(tolerantResource) >= sourceCSSore.score {
@@ -257,4 +260,18 @@ func buildCopySetScore(s1, s2, s3 float64, cs copysets.CopySet) copysetScore {
 		minScore: minScore,
 		sign:     cs.Sign(),
 	}
+}
+
+func haveCommonNode(sourceCS copysets.CopySet, targetCS copysets.CopySet) bool {
+	n1, n2, n3 := sourceCS.GetNodesID()
+	if targetCS.IsStoreInCopySet(n1) {
+		return true
+	}
+	if targetCS.IsStoreInCopySet(n2) {
+		return true
+	}
+	if targetCS.IsStoreInCopySet(n3) {
+		return true
+	}
+	return false
 }
