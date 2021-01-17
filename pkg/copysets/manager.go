@@ -57,16 +57,10 @@ func NewCopysetsManager(R, S int, nodesID []uint64) *CopysetsManager {
 func (m *CopysetsManager) AddNode(nodeID uint64) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if len(m.mu.nodesID) >= 15 {
-		return
-	}
 	csGauge.WithLabelValues("add_node").Set(float64(len(m.mu.nodesID)))
 	m.mu.nodesID[nodeID] = struct{}{}
 	if m.mu.nm != nil {
 		m.mu.nm.AddNode(nodeID)
-	}
-	if len(m.mu.nodesID) >= 15 {
-		m.mu.nm = NewNodeManager(m.R*m.cm.C, mapToSlice(m.mu.nodesID))
 	}
 	m.mu.needChange = true
 }
@@ -74,9 +68,6 @@ func (m *CopysetsManager) AddNode(nodeID uint64) {
 func (m *CopysetsManager) DelNode(nodeID uint64) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if len(m.mu.nodesID) >= 15 {
-		return
-	}
 	csGauge.WithLabelValues("del_node").Set(float64(len(m.mu.nodesID)))
 	delete(m.mu.nodesID, nodeID)
 	if m.mu.nm != nil {
@@ -93,7 +84,6 @@ func (m *CopysetsManager) GenerateCopySets(nowID []uint64) []CopySet {
 	}
 	reset := false
 	var groups []*Group
-	csGauge.WithLabelValues("generate").Set(float64(len(m.mu.nodesID)))
 	if m.mu.nm == nil || len(m.mu.nodesID) < 15 {
 		if len(nowID) >= 15 {
 			reset = true
@@ -101,7 +91,12 @@ func (m *CopysetsManager) GenerateCopySets(nowID []uint64) []CopySet {
 			return nil
 		}
 	} else if len(m.mu.cache) > 0 {
-		return m.mu.cache
+		x := m.mu.cache
+		for _, cs := range m.mu.cache {
+			copySetGauge.WithLabelValues(cs.Sign()).Set(1)
+		}
+		csGauge.WithLabelValues("").Set(float64(len(m.mu.cache)))
+		return x
 	}
 	if reset || len(m.mu.cache) < 1 {
 		m.mu.nodesID = sliceToMap(nowID)
