@@ -7,16 +7,17 @@ import (
 
 func main() {
 
-	initialCount := 100
+	initialCount := 1000
 	nodesID := make([]uint64, 0, 0)
 	for i := 1; i <= initialCount; i++ {
 		nodesID = append(nodesID, uint64(i))
 	}
 	cm := copysets.NewCopysetsManager(3, 6, nodesID)
-	css := cm.GenerateCopySets()
-	for _, cs := range css {
-		fmt.Println(cs.Sign())
-	}
+	css := cm.GenerateCopySets(nodesID)
+	fmt.Println(len(css))
+	//for _, cs := range css {
+	//	fmt.Println(cs.Sign())
+	//}
 
 	//cs := cm.GenerateCopySets()
 	//printInfo(initialCount, len(cs))
