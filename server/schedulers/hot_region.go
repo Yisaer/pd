@@ -763,6 +763,7 @@ func (bs *balanceSolver) filterDstStores() map[uint64]*storeLoadDetail {
 	default:
 		return nil
 	}
+	asdaw
 	return bs.pickDstStores(filters, candidates)
 }
 
