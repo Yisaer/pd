@@ -49,6 +49,7 @@ type StoreInfo struct {
 	leaderWeight        float64
 	regionWeight        float64
 	available           map[storelimit.Type]func() bool
+	lastHeartbeat       time.Time
 }
 
 // NewStoreInfo creates StoreInfo with meta data.
@@ -452,6 +453,14 @@ func (s *StoreInfo) CompareLocation(other *StoreInfo, labels []string) int {
 		}
 	}
 	return -1
+}
+
+func (s *StoreInfo) SetLastHeartbeat(t time.Time) {
+	s.lastHeartbeat = t
+}
+
+func (s *StoreInfo) GetLastHeartbeat() time.Time {
+	return s.lastHeartbeat
 }
 
 const replicaBaseScore = 100

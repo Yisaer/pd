@@ -17,6 +17,16 @@ import (
 	"github.com/pingcap/kvproto/pkg/metapb"
 )
 
+type PeerInfo struct {
+	RegionID   uint64
+	StoreID    uint64
+	PeerID     uint64
+	ReadBytes  uint64
+	ReadKeys   uint64
+	WriteBytes uint64
+	WriteKeys  uint64
+}
+
 // IsLearner judges whether the Peer's Role is Learner.
 func IsLearner(peer *metapb.Peer) bool {
 	return peer.GetRole() == metapb.PeerRole_Learner

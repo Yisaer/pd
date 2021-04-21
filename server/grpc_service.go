@@ -450,7 +450,6 @@ func (s *Server) StoreHeartbeat(ctx context.Context, request *pdpb.StoreHeartbea
 	}
 
 	storeHeartbeatHandleDuration.WithLabelValues(storeAddress, storeLabel).Observe(time.Since(start).Seconds())
-
 	return &pdpb.StoreHeartbeatResponse{
 		Header:            s.header(),
 		ReplicationStatus: rc.GetReplicationMode().GetReplicationStatus(),

@@ -525,6 +525,9 @@ func (c *RaftCluster) HandleStoreHeartbeat(stats *pdpb.StoreStats) error {
 	if store := c.core.GetStore(newStore.GetID()); store != nil {
 		c.hotStat.UpdateStoreHeartbeatMetrics(store)
 	}
+	interval := uint64(time.Now().Sub(store.GetLastHeartbeat()).Seconds())
+	c.handleStorePeerStat(storeID, stats, interval)
+	newStore.SetLastHeartbeat(time.Now())
 	c.core.PutStore(newStore)
 	c.hotStat.Observe(newStore.GetID(), newStore.GetStoreStats())
 	c.hotStat.UpdateTotalLoad(c.core.GetStores())
@@ -534,8 +537,32 @@ func (c *RaftCluster) HandleStoreHeartbeat(stats *pdpb.StoreStats) error {
 	if c.limiter != nil && c.opt.GetStoreLimitMode() == "auto" {
 		c.limiter.Collect(newStore.GetStoreStats())
 	}
-
 	return nil
+}
+
+func (c *RaftCluster) handleStorePeerStat(storeID uint64, stats *pdpb.StoreStats, interval uint64) {
+	peerID := make([]uint64, 0)
+	readKeys := make([]uint64, 0)
+	readBytes := make([]uint64, 0)
+	for regionID, peerRead := range stats.GetPeersReadStat() {
+		peerID = append(peerID, peerRead.GetPeerId())
+		readKeys = append(readKeys, peerRead.KeysRead)
+		readBytes = append(readBytes, peerRead.BytesRead)
+		peerInfo := &core.PeerInfo{
+			RegionID:  regionID,
+			StoreID:   storeID,
+			PeerID:    peerRead.GetPeerId(),
+			ReadBytes: peerRead.BytesRead,
+			ReadKeys:  peerRead.KeysRead,
+		}
+		region := c.GetRegion(regionID)
+		c.hotStat.AddReadPeerInfo(peerInfo, region, interval)
+	}
+	log.Info("handleStorePeerStat",
+		zap.Uint64("store-id", storeID),
+		zap.Uint64s("peer-id", peerID),
+		zap.Uint64s("read-keys", readKeys),
+		zap.Uint64s("read-bytes", readBytes))
 }
 
 // processRegionHeartbeat updates the region information.
@@ -546,8 +573,9 @@ func (c *RaftCluster) processRegionHeartbeat(region *core.RegionInfo) error {
 		c.RUnlock()
 		return err
 	}
-	writeItems := c.CheckWriteStatus(region)
-	readItems := c.CheckReadStatus(region)
+
+	c.CheckWriteStatus(region)
+	c.CheckReadStatus(region)
 	c.RUnlock()
 
 	// Save to storage if meta is updated.
@@ -623,9 +651,9 @@ func (c *RaftCluster) processRegionHeartbeat(region *core.RegionInfo) error {
 		}
 	}
 
-	if len(writeItems) == 0 && len(readItems) == 0 && !saveKV && !saveCache && !isNew {
-		return nil
-	}
+	//if len(writeItems) == 0 && len(readItems) == 0 && !saveKV && !saveCache && !isNew {
+	//	return nil
+	//}
 
 	failpoint.Inject("concurrentRegionHeartbeat", func() {
 		time.Sleep(500 * time.Millisecond)
@@ -683,12 +711,12 @@ func (c *RaftCluster) processRegionHeartbeat(region *core.RegionInfo) error {
 		c.regionStats.Observe(region, c.getRegionStoresLocked(region))
 	}
 
-	for _, writeItem := range writeItems {
-		c.hotStat.Update(writeItem)
-	}
-	for _, readItem := range readItems {
-		c.hotStat.Update(readItem)
-	}
+	//for _, writeItem := range writeItems {
+	//	c.hotStat.Update(writeItem)
+	//}
+	//for _, readItem := range readItems {
+	//	c.hotStat.Update(readItem)
+	//}
 	c.Unlock()
 
 	// If there are concurrent heartbeats from the same region, the last write will win even if
@@ -1476,13 +1504,13 @@ func (c *RaftCluster) RegionWriteStats() map[uint64][]*statistics.HotPeerStat {
 }
 
 // CheckWriteStatus checks the write status, returns whether need update statistics and item.
-func (c *RaftCluster) CheckWriteStatus(region *core.RegionInfo) []*statistics.HotPeerStat {
-	return c.hotStat.CheckWrite(region)
+func (c *RaftCluster) CheckWriteStatus(region *core.RegionInfo) {
+	c.hotStat.CheckWrite(region)
 }
 
 // CheckReadStatus checks the read status, returns whether need update statistics and item.
-func (c *RaftCluster) CheckReadStatus(region *core.RegionInfo) []*statistics.HotPeerStat {
-	return c.hotStat.CheckRead(region)
+func (c *RaftCluster) CheckReadStatus(region *core.RegionInfo) {
+	c.hotStat.CheckRead(region)
 }
 
 // TODO: remove me.

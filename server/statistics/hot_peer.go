@@ -71,6 +71,7 @@ func (d *dimStat) Get() float64 {
 type HotPeerStat struct {
 	StoreID  uint64 `json:"store_id"`
 	RegionID uint64 `json:"region_id"`
+	PeerID   uint64 `json:"peer_id"`
 
 	// HotDegree records the times for the region considered as hot spot during each HandleRegionHeartbeat
 	HotDegree int `json:"hot_degree"`
@@ -88,19 +89,15 @@ type HotPeerStat struct {
 	// LastUpdateTime used to calculate average write
 	LastUpdateTime time.Time `json:"last_update_time"`
 
-	needDelete             bool
 	isLeader               bool
 	isNew                  bool
-	justTransferLeader     bool
 	interval               uint64
 	thresholds             [dimLen]float64
-	peers                  []uint64
-	lastTransferLeaderTime time.Time
 }
 
 // ID returns region ID. Implementing TopNItem.
 func (stat *HotPeerStat) ID() uint64 {
-	return stat.RegionID
+	return stat.PeerID
 }
 
 // Less compares two HotPeerStat.Implementing TopNItem.
@@ -130,21 +127,8 @@ func (stat *HotPeerStat) Log(str string, level func(msg string, fields ...zap.Fi
 		zap.Float64("key-rate-threshold", stat.thresholds[keyDim]),
 		zap.Int("hot-degree", stat.HotDegree),
 		zap.Int("hot-anti-count", stat.AntiCount),
-		zap.Bool("just-transfer-leader", stat.justTransferLeader),
 		zap.Bool("is-leader", stat.isLeader),
-		zap.Bool("need-delete", stat.IsNeedDelete()),
-		zap.String("type", stat.Kind.String()),
-		zap.Time("last-transfer-leader-time", stat.lastTransferLeaderTime))
-}
-
-// IsNeedCoolDownTransferLeader use cooldown time after transfer leader to avoid unnecessary schedule
-func (stat *HotPeerStat) IsNeedCoolDownTransferLeader(minHotDegree int) bool {
-	return time.Since(stat.lastTransferLeaderTime).Seconds() < float64(minHotDegree*RegionHeartBeatReportInterval)
-}
-
-// IsNeedDelete to delete the item in cache.
-func (stat *HotPeerStat) IsNeedDelete() bool {
-	return stat.needDelete
+		zap.String("type", stat.Kind.String()))
 }
 
 // IsLeader indicates the item belong to the leader.

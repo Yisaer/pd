@@ -332,18 +332,18 @@ func (mc *Cluster) AddLeaderRegionWithReadInfo(
 	r = r.Clone(core.SetReadBytes(readBytes))
 	r = r.Clone(core.SetReadKeys(readKeys))
 	r = r.Clone(core.SetReportInterval(reportInterval))
-	filledNum := mc.HotCache.GetFilledPeriod(statistics.ReadFlow)
-	if len(filledNums) > 0 {
-		filledNum = filledNums[0]
-	}
+	//filledNum := mc.HotCache.GetFilledPeriod(statistics.ReadFlow)
+	//if len(filledNums) > 0 {
+	//	filledNum = filledNums[0]
+	//}
 
 	var items []*statistics.HotPeerStat
-	for i := 0; i < filledNum; i++ {
-		items = mc.HotCache.CheckRead(r)
-		for _, item := range items {
-			mc.HotCache.Update(item)
-		}
-	}
+	//for i := 0; i < filledNum; i++ {
+	//	items = mc.HotCache.CheckRead(r)
+	//	for _, item := range items {
+	//		mc.HotCache.Update(item)
+	//	}
+	//}
 	mc.PutRegion(r)
 	return items
 }
@@ -359,18 +359,18 @@ func (mc *Cluster) AddLeaderRegionWithWriteInfo(
 	r = r.Clone(core.SetWrittenKeys(writtenKeys))
 	r = r.Clone(core.SetReportInterval(reportInterval))
 
-	filledNum := mc.HotCache.GetFilledPeriod(statistics.WriteFlow)
-	if len(filledNums) > 0 {
-		filledNum = filledNums[0]
-	}
+	//filledNum := mc.HotCache.GetFilledPeriod(statistics.WriteFlow)
+	//if len(filledNums) > 0 {
+	//	filledNum = filledNums[0]
+	//}
 
 	var items []*statistics.HotPeerStat
-	for i := 0; i < filledNum; i++ {
-		items = mc.HotCache.CheckWrite(r)
-		for _, item := range items {
-			mc.HotCache.Update(item)
-		}
-	}
+	//for i := 0; i < filledNum; i++ {
+	//	items = mc.HotCache.CheckWrite(r)
+	//	for _, item := range items {
+	//		mc.HotCache.Update(item)
+	//	}
+	//}
 	mc.PutRegion(r)
 	return items
 }

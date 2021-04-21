@@ -38,32 +38,36 @@ func NewHotCache() *HotCache {
 }
 
 // CheckWrite checks the write status, returns update items.
-func (w *HotCache) CheckWrite(region *core.RegionInfo) []*HotPeerStat {
-	return w.writeFlow.CheckRegionFlow(region)
+func (w *HotCache) CheckWrite(region *core.RegionInfo) {
+	w.writeFlow.CheckRegion(region)
 }
 
 // CheckRead checks the read status, returns update items.
-func (w *HotCache) CheckRead(region *core.RegionInfo) []*HotPeerStat {
-	return w.readFlow.CheckRegionFlow(region)
+func (w *HotCache) CheckRead(region *core.RegionInfo) {
+	w.readFlow.CheckRegion(region)
 }
 
-// Update updates the cache.
-func (w *HotCache) Update(item *HotPeerStat) {
-	switch item.Kind {
-	case WriteFlow:
-		w.writeFlow.Update(item)
-	case ReadFlow:
-		w.readFlow.Update(item)
-	}
-
-	if item.IsNeedDelete() {
-		w.incMetrics("remove_item", item.StoreID, item.Kind)
-	} else if item.IsNew() {
-		w.incMetrics("add_item", item.StoreID, item.Kind)
-	} else {
-		w.incMetrics("update_item", item.StoreID, item.Kind)
-	}
+func (w *HotCache) AddReadPeerInfo(peer *core.PeerInfo, region *core.RegionInfo, interval uint64) {
+	w.readFlow.AddPeerFlow(peer, region, interval)
 }
+
+//// Update updates the cache.
+//func (w *HotCache) Update(item *HotPeerStat) {
+//	switch item.Kind {
+//	case WriteFlow:
+//		w.writeFlow.Update(item)
+//	case ReadFlow:
+//		w.readFlow.Update(item)
+//	}
+//
+//	if item.IsNeedDelete() {
+//		w.incMetrics("remove_item", item.StoreID, item.Kind)
+//	} else if item.IsNew() {
+//		w.incMetrics("add_item", item.StoreID, item.Kind)
+//	} else {
+//		w.incMetrics("update_item", item.StoreID, item.Kind)
+//	}
+//}
 
 // RegionStats returns hot items according to kind
 func (w *HotCache) RegionStats(kind FlowKind, minHotDegree int) map[uint64][]*HotPeerStat {
@@ -112,12 +116,12 @@ func (w *HotCache) incMetrics(name string, storeID uint64, kind FlowKind) {
 }
 
 // GetFilledPeriod returns filled period.
-func (w *HotCache) GetFilledPeriod(kind FlowKind) int {
-	switch kind {
-	case WriteFlow:
-		return w.writeFlow.getDefaultTimeMedian().GetFilledPeriod()
-	case ReadFlow:
-		return w.readFlow.getDefaultTimeMedian().GetFilledPeriod()
-	}
-	return 0
-}
+//func (w *HotCache) GetFilledPeriod(kind FlowKind) int {
+//	switch kind {
+//	case WriteFlow:
+//		return w.writeFlow.getDefaultTimeMedian().GetFilledPeriod()
+//	case ReadFlow:
+//		return w.readFlow.getDefaultTimeMedian().GetFilledPeriod()
+//	}
+//	return 0
+//}
