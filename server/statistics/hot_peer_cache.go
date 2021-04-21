@@ -14,10 +14,11 @@
 package statistics
 
 import (
-	"github.com/pingcap/kvproto/pkg/metapb"
-	"github.com/tikv/pd/server/core"
 	"math"
 	"time"
+
+	"github.com/pingcap/kvproto/pkg/metapb"
+	"github.com/tikv/pd/server/core"
 )
 
 const (
@@ -131,7 +132,9 @@ func (f *hotPeerCache) AddPeerFlow(peer *core.PeerInfo, region *core.RegionInfo,
 	newItem, remove := f.updateHotPeerStat(newItem, oldItem, bytes, keys, time.Duration(interval)*time.Second)
 	if remove {
 		f.RemoveItem(newItem)
-	} else {
+		return
+	}
+	if newItem != nil {
 		f.AddItem(newItem)
 	}
 }
@@ -218,7 +221,6 @@ func (f *hotPeerCache) RegionStats(minHotDegree int) map[uint64][]*HotPeerStat {
 //	}
 //}
 
-
 //func (f *hotPeerCache) collectRegionMetrics(byteRate, keyRate float64, interval uint64) {
 //	regionHeartbeatIntervalHist.Observe(float64(interval))
 //	if interval == 0 {
@@ -234,7 +236,6 @@ func (f *hotPeerCache) RegionStats(minHotDegree int) map[uint64][]*HotPeerStat {
 //	}
 //}
 
-
 //
 func (f *hotPeerCache) IsRegionHot(region *core.RegionInfo, hotDegree int) bool {
 	switch f.kind {
@@ -245,7 +246,6 @@ func (f *hotPeerCache) IsRegionHot(region *core.RegionInfo, hotDegree int) bool 
 	}
 	return false
 }
-
 
 func (f *hotPeerCache) CollectMetrics(typ string) {
 	for storeID, peers := range f.peersOfStore {
@@ -420,7 +420,7 @@ func (f *hotPeerCache) updateHotPeerStat(newItem, oldItem *HotPeerStat, bytes, k
 		if !isHot {
 			return nil, false
 		}
-		if interval.Seconds() >= RegionHeartBeatReportInterval {
+		if interval.Seconds() >= StoreHeartBeatReportInterval {
 			newItem.HotDegree = 1
 			newItem.AntiCount = hotRegionAntiCount
 		}

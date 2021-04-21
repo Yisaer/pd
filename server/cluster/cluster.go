@@ -541,6 +541,7 @@ func (c *RaftCluster) HandleStoreHeartbeat(stats *pdpb.StoreStats) error {
 }
 
 func (c *RaftCluster) handleStorePeerStat(storeID uint64, stats *pdpb.StoreStats, interval uint64) {
+	interval = 10
 	peerID := make([]uint64, 0)
 	readKeys := make([]uint64, 0)
 	readBytes := make([]uint64, 0)
@@ -559,6 +560,7 @@ func (c *RaftCluster) handleStorePeerStat(storeID uint64, stats *pdpb.StoreStats
 		c.hotStat.AddReadPeerInfo(peerInfo, region, interval)
 	}
 	log.Info("handleStorePeerStat",
+		zap.Uint64("interval", interval),
 		zap.Uint64("store-id", storeID),
 		zap.Uint64s("peer-id", peerID),
 		zap.Uint64s("read-keys", readKeys),
@@ -574,8 +576,8 @@ func (c *RaftCluster) processRegionHeartbeat(region *core.RegionInfo) error {
 		return err
 	}
 
-	c.CheckWriteStatus(region)
-	c.CheckReadStatus(region)
+	// c.CheckWriteStatus(region)
+	// c.CheckReadStatus(region)
 	c.RUnlock()
 
 	// Save to storage if meta is updated.
