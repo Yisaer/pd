@@ -48,6 +48,8 @@ type RegionInfo struct {
 	writtenKeys       uint64
 	readBytes         uint64
 	readKeys          uint64
+	staleReadBytes    uint64
+	staleReadKeys     uint64
 	approximateSize   int64
 	approximateKeys   int64
 	interval          *pdpb.TimeInterval
@@ -117,6 +119,8 @@ func RegionFromHeartbeat(heartbeat *pdpb.RegionHeartbeatRequest) *RegionInfo {
 		approximateKeys:   int64(heartbeat.GetApproximateKeys()),
 		interval:          heartbeat.GetInterval(),
 		replicationStatus: heartbeat.GetReplicationStatus(),
+		staleReadBytes:    heartbeat.GetStaleReadBytes(),
+		staleReadKeys:     heartbeat.GetStaleReadKeys(),
 	}
 
 	if region.writtenKeys >= ImpossibleFlowSize || region.writtenBytes >= ImpossibleFlowSize {
@@ -404,6 +408,14 @@ func (r *RegionInfo) GetKeysWritten() uint64 {
 // GetKeysRead returns the read keys of the region.
 func (r *RegionInfo) GetKeysRead() uint64 {
 	return r.readKeys
+}
+
+func (r *RegionInfo) GetStaleKeysRead() uint64 {
+	return r.staleReadKeys
+}
+
+func (r *RegionInfo) GetStaleBytesRead() uint64 {
+	return r.staleReadBytes
 }
 
 // GetLeader returns the leader of the region.

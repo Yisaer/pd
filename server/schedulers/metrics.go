@@ -111,6 +111,14 @@ var scatterRangeRegionCounter = prometheus.NewCounterVec(
 		Help:      "Counter of scatter range region scheduler.",
 	}, []string{"type", "store"})
 
+var moveHotReadFollowerPeer = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Namespace: "pd",
+		Subsystem: "scheduler",
+		Name:      "move_hot_region_peer",
+		Help:      "Counter of move hot region peer.",
+	}, []string{})
+
 func init() {
 	prometheus.MustRegister(schedulerCounter)
 	prometheus.MustRegister(schedulerStatus)
@@ -124,4 +132,5 @@ func init() {
 	prometheus.MustRegister(scatterRangeRegionCounter)
 	prometheus.MustRegister(opInfluenceStatus)
 	prometheus.MustRegister(tolerantResourceStatus)
+	prometheus.MustRegister(moveHotReadFollowerPeer)
 }

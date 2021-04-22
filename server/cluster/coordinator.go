@@ -546,15 +546,26 @@ func (c *coordinator) collectHotSpotMetrics() {
 		storeAddress := s.GetAddress()
 		storeID := s.GetID()
 		storeLabel := fmt.Sprintf("%d", storeID)
-		stat, ok := status.AsLeader[storeID]
+		leaderStat, ok := status.AsLeader[storeID]
 		if ok {
-			hotSpotStatusGauge.WithLabelValues(storeAddress, storeLabel, "total_read_bytes_as_leader").Set(stat.TotalBytesRate)
-			hotSpotStatusGauge.WithLabelValues(storeAddress, storeLabel, "total_read_keys_as_leader").Set(stat.TotalKeysRate)
-			hotSpotStatusGauge.WithLabelValues(storeAddress, storeLabel, "hot_read_region_as_leader").Set(float64(stat.Count))
+			hotSpotStatusGauge.WithLabelValues(storeAddress, storeLabel, "total_read_bytes_as_leader").Set(leaderStat.TotalBytesRate)
+			hotSpotStatusGauge.WithLabelValues(storeAddress, storeLabel, "total_read_keys_as_leader").Set(leaderStat.TotalKeysRate)
+			hotSpotStatusGauge.WithLabelValues(storeAddress, storeLabel, "hot_read_region_as_leader").Set(float64(leaderStat.Count))
 		} else {
 			hotSpotStatusGauge.WithLabelValues(storeAddress, storeLabel, "total_read_bytes_as_leader").Set(0)
 			hotSpotStatusGauge.WithLabelValues(storeAddress, storeLabel, "total_read_keys_as_leader").Set(0)
 			hotSpotStatusGauge.WithLabelValues(storeAddress, storeLabel, "hot_read_region_as_leader").Set(0)
+		}
+
+		PeerStat, ok := status.AsPeer[storeID]
+		if ok {
+			hotSpotStatusGauge.WithLabelValues(storeAddress, storeLabel, "total_read_bytes_as_peer").Set(PeerStat.TotalBytesRate)
+			hotSpotStatusGauge.WithLabelValues(storeAddress, storeLabel, "total_read_keys_as_peer").Set(PeerStat.TotalKeysRate)
+			hotSpotStatusGauge.WithLabelValues(storeAddress, storeLabel, "hot_read_region_as_peer").Set(float64(PeerStat.Count))
+		} else {
+			hotSpotStatusGauge.WithLabelValues(storeAddress, storeLabel, "total_read_bytes_as_peer").Set(0)
+			hotSpotStatusGauge.WithLabelValues(storeAddress, storeLabel, "total_read_keys_as_peer").Set(0)
+			hotSpotStatusGauge.WithLabelValues(storeAddress, storeLabel, "hot_read_region_as_peer").Set(0)
 		}
 
 		infl := pendings[storeID]
