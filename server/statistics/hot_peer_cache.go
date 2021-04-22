@@ -170,6 +170,7 @@ func (f *hotPeerCache) CheckRegionFlow(region *core.RegionInfo) (ret []*HotPeerS
 	return ret
 }
 
+// CheckPeerFlow checks the flow information of a peer.
 func (f *hotPeerCache) CheckPeerFlow(peer *core.PeerInfo, region *core.RegionInfo, interval uint64) *HotPeerStat {
 	storeID := peer.GetStoreID()
 	bytes := float64(f.getPeerBytes(peer))
