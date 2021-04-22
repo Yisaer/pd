@@ -179,7 +179,7 @@ func (f *hotPeerCache) CheckPeerFlow(peer *core.PeerInfo, region *core.RegionInf
 	keyRate := keys / float64(interval)
 	f.collectPeerMetrics(byteRate, keyRate, interval)
 	var tmpItem *HotPeerStat
-	justTransferLeader := f.justTransferLeaderPeer(peer, region.GetID())
+	justTransferLeader := f.justTransferLeaderPeer(region)
 	isExpired := f.isPeerExpired(peer, region) // transfer read leader or remove write peer
 	oldItem := f.getOldHotPeerStat(region.GetID(), storeID)
 	if isExpired && oldItem != nil { // it may has been moved to other store, we save it to tmpItem
@@ -257,7 +257,7 @@ func (f *hotPeerCache) getPeerBytes(peer *core.PeerInfo) uint64 {
 func (f *hotPeerCache) getPeerKeys(peer *core.PeerInfo) uint64 {
 	switch f.kind {
 	case WriteFlow:
-		return peer.GetWrittenBytes()
+		return peer.GetWrittenKeys()
 	case ReadFlow:
 		return peer.GetReadKeys()
 	}
@@ -323,17 +323,16 @@ func (f *hotPeerCache) isOldColdPeer(oldItem *HotPeerStat, storeID uint64) bool 
 	return isOldPeer() && noInCache()
 }
 
-func (f *hotPeerCache) justTransferLeaderPeer(peer *core.PeerInfo, regionID uint64) bool {
-	currStoreID := peer.GetStoreID()
-	ids, ok := f.storesOfRegion[regionID]
+func (f *hotPeerCache) justTransferLeaderPeer(region *core.RegionInfo) bool {
+	ids, ok := f.storesOfRegion[region.GetID()]
 	if ok {
 		for storeID := range ids {
-			oldItem := f.getOldHotPeerStat(regionID, storeID)
+			oldItem := f.getOldHotPeerStat(region.GetID(), storeID)
 			if oldItem == nil {
 				continue
 			}
 			if oldItem.isLeader {
-				return oldItem.StoreID != currStoreID
+				return oldItem.StoreID != region.GetLeader().GetStoreId()
 			}
 		}
 	}
