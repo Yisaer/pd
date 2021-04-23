@@ -178,13 +178,9 @@ func (f *hotPeerCache) CheckPeerFlow(peer *core.PeerInfo, region *core.RegionInf
 	byteRate := bytes / float64(interval)
 	keyRate := keys / float64(interval)
 	f.collectPeerMetrics(byteRate, keyRate, interval)
-	var tmpItem *HotPeerStat
 	justTransferLeader := f.justTransferLeaderPeer(region)
 	isExpired := f.isPeerExpired(peer, region) // transfer read leader or remove write peer
 	oldItem := f.getOldHotPeerStat(region.GetID(), storeID)
-	if isExpired && oldItem != nil { // it may has been moved to other store, we save it to tmpItem
-		tmpItem = oldItem
-	}
 	if !isExpired && Denoising && interval < HotRegionReportMinInterval {
 		return nil
 	}
@@ -208,9 +204,16 @@ func (f *hotPeerCache) CheckPeerFlow(peer *core.PeerInfo, region *core.RegionInf
 		thresholds:         thresholds,
 	}
 	if oldItem == nil {
-		if tmpItem != nil { // use the tmpItem cached from the store where this region was in before
-			oldItem = tmpItem
-		} else { // new item is new peer after adding replica
+		if f.kind == ReadFlow {
+			if justTransferLeader {
+				for _, storeID := range f.getAllStoreIDs(region) {
+					oldItem = f.getOldHotPeerStat(region.GetID(), storeID)
+					if oldItem != nil {
+						break
+					}
+				}
+			}
+		} else {
 			for _, storeID := range f.getAllStoreIDs(region) {
 				oldItem = f.getOldHotPeerStat(region.GetID(), storeID)
 				if oldItem != nil {
