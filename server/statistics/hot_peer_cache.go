@@ -205,12 +205,10 @@ func (f *hotPeerCache) CheckPeerFlow(peer *core.PeerInfo, region *core.RegionInf
 	}
 	if oldItem == nil {
 		if f.kind == ReadFlow {
-			if justTransferLeader {
-				for _, storeID := range f.getAllStoreIDs(region) {
-					oldItem = f.getOldHotPeerStat(region.GetID(), storeID)
-					if oldItem != nil {
-						break
-					}
+			for _, storeID := range f.getAllStoreIDs(region) {
+				oldItem = f.getOldHotPeerStat(region.GetID(), storeID)
+				if oldItem != nil {
+					break
 				}
 			}
 		} else {
