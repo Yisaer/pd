@@ -105,6 +105,9 @@ func (f *hotPeerCache) Update(item *HotPeerStat) {
 			peers = NewTopN(dimLen, TopNN, topNTTL)
 			f.peersOfStore[item.StoreID] = peers
 		}
+		if f.kind == ReadFlow {
+			log.Info("Update HotPeerStat", zap.Uint64("region-id", item.RegionID), zap.Uint64("store-id", item.StoreID))
+		}
 		peers.Put(item)
 
 		stores, ok := f.storesOfRegion[item.RegionID]
@@ -202,6 +205,9 @@ func (f *hotPeerCache) CheckRegionFlow(region *core.RegionInfo) (ret []*HotPeerS
 				ret = append(ret, item)
 			}
 		}
+	}
+	if f.kind == ReadFlow {
+		log.Info("CheckRegionFlow return Item", zap.Uint64("region-id", region.GetID()), zap.Int("ret-count", len(ret)))
 	}
 
 	log.Debug("region heartbeat info",
