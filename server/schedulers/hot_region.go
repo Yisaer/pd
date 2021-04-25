@@ -220,7 +220,7 @@ func (h *hotScheduler) prepareForBalance(cluster opt.Cluster) {
 			read, core.LeaderKind)
 		h.stLoadInfos[readPeer] = summaryStoresLoad(
 			storesLoads,
-			h.pendingSums[readPeer],
+			h.pendingSums[read],
 			regionRead,
 			read, core.RegionKind)
 	}

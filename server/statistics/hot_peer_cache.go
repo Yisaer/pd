@@ -141,23 +141,53 @@ func (f *hotPeerCache) CheckRegionFlow(region *core.RegionInfo) (ret []*HotPeerS
 		f.collectRegionMetrics(byteRate, keyRate, interval)
 	}
 
-	for _, storeID := range storeIDs {
-		peer := region.GetStorePeer(storeID)
-		var item *HotPeerStat
-		if peer != nil {
-			peerInfo := core.FromMetaPeer(peer).
-				SetReadKeys(region.GetKeysRead()).
-				SetReadBytes(region.GetBytesRead()).
-				SetWriteKeys(region.GetKeysWritten()).
-				SetWriteBytes(region.GetBytesWritten())
-			item = f.CheckPeerFlow(peerInfo, region, interval)
-		} else {
-			// Not in region anymore
-			item = f.getOldHotPeerStat(regionID, storeID)
-			item.needDelete = true
+	if f.kind == WriteFlow {
+		for _, storeID := range storeIDs {
+			peer := region.GetStorePeer(storeID)
+			var item *HotPeerStat
+			if peer != nil {
+				peerInfo := core.FromMetaPeer(peer).
+					SetReadKeys(region.GetKeysRead()).
+					SetReadBytes(region.GetBytesRead()).
+					SetWriteKeys(region.GetKeysWritten()).
+					SetWriteBytes(region.GetBytesWritten())
+				item = f.CheckPeerFlow(peerInfo, region, interval)
+			} else {
+				// Not in region anymore
+				item = f.getOldHotPeerStat(regionID, storeID)
+				item.needDelete = true
+			}
+			if item != nil {
+				ret = append(ret, item)
+			}
 		}
-		if item != nil {
-			ret = append(ret, item)
+	} else {
+		for _, storeID := range storeIDs {
+			peer := region.GetStorePeer(storeID)
+			var item *HotPeerStat
+			if peer == nil {
+				item = f.getOldHotPeerStat(regionID, storeID)
+				item.needDelete = true
+			} else {
+				if peer.StoreId == region.GetLeader().StoreId {
+					peerInfo := core.FromMetaPeer(peer).
+						SetReadKeys(region.GetKeysRead()).
+						SetReadBytes(region.GetBytesRead()).
+						SetWriteKeys(region.GetKeysWritten()).
+						SetWriteBytes(region.GetBytesWritten())
+					item = f.CheckPeerFlow(peerInfo, region, interval)
+				} else {
+					peerInfo := core.FromMetaPeer(peer).
+						SetReadKeys(region.GetStaleKeysRead()).
+						SetReadBytes(region.GetStaleBytesRead()).
+						SetWriteKeys(region.GetKeysWritten()).
+						SetWriteBytes(region.GetBytesWritten())
+					item = f.CheckPeerFlow(peerInfo, region, interval)
+				}
+			}
+			if item != nil {
+				ret = append(ret, item)
+			}
 		}
 	}
 
