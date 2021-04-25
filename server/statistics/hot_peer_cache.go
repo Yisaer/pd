@@ -505,9 +505,9 @@ func (f *hotPeerCache) getAllStoreIDs(region *core.RegionInfo) []uint64 {
 	// new stores
 	for _, peer := range region.GetPeers() {
 		// ReadFlow no need consider the followers.
-		if f.kind == ReadFlow && peer.GetStoreId() != region.GetLeader().GetStoreId() {
-			continue
-		}
+		//if f.kind == ReadFlow && peer.GetStoreId() != region.GetLeader().GetStoreId() {
+		//	continue
+		//}
 		if _, ok := storeIDs[peer.GetStoreId()]; !ok {
 			storeIDs[peer.GetStoreId()] = struct{}{}
 			ret = append(ret, peer.GetStoreId())
