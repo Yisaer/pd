@@ -300,15 +300,10 @@ func (f *hotPeerCache) getOldHotPeerStat(regionID, storeID uint64) *HotPeerStat 
 	return nil
 }
 
+// TODO
 func (f *hotPeerCache) isPeerExpired(peer *core.PeerInfo, region *core.RegionInfo) bool {
 	storeID := peer.GetStoreID()
-	switch f.kind {
-	case WriteFlow:
-		return region.GetStorePeer(storeID) == nil
-	case ReadFlow:
-		return region.GetLeader().GetStoreId() != storeID
-	}
-	return false
+	return region.GetStorePeer(storeID) == nil
 }
 
 func (f *hotPeerCache) calcHotThresholds(storeID uint64) [dimLen]float64 {
