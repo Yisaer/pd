@@ -226,7 +226,6 @@ func (f *hotPeerCache) CheckPeerFlow(peer *core.PeerInfo, region *core.RegionInf
 	newItem := &HotPeerStat{
 		StoreID:            storeID,
 		RegionID:           region.GetID(),
-		PeerID:             peer.GetPeerID(),
 		Kind:               f.kind,
 		ByteRate:           byteRate,
 		KeyRate:            keyRate,
