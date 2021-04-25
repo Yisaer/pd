@@ -415,12 +415,6 @@ func (h *hotScheduler) balanceHotReadRegions(cluster opt.Cluster) []*operator.Op
 	if len(ops) > 0 {
 		return ops
 	}
-	// leader
-	leaderSolver := newBalanceSolver(h, cluster, read, transferLeader)
-	ops = leaderSolver.solve()
-	if len(ops) > 0 {
-		return ops
-	}
 	schedulerCounter.WithLabelValues(h.GetName(), "skip").Inc()
 	return nil
 }
