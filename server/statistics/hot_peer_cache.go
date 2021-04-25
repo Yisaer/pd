@@ -169,27 +169,34 @@ func (f *hotPeerCache) CheckRegionFlow(region *core.RegionInfo) (ret []*HotPeerS
 				item = f.getOldHotPeerStat(regionID, storeID)
 				item.needDelete = true
 			} else {
-				if peer.StoreId == region.GetLeader().StoreId {
-					peerInfo := core.FromMetaPeer(peer).
-						SetReadKeys(region.GetKeysRead()).
-						SetReadBytes(region.GetBytesRead()).
-						SetWriteKeys(region.GetKeysWritten()).
-						SetWriteBytes(region.GetBytesWritten())
-					item = f.CheckPeerFlow(peerInfo, region, interval)
-				} else {
-					if region.GetStaleKeysRead() > 0 || region.GetStaleBytesRead() > 0 {
-						log.Info("stale-read",
-							zap.Uint64("region-id", region.GetID()),
-							zap.Uint64("stale-read-keys", region.GetStaleKeysRead()),
-							zap.Uint64("stale-read-bytes", region.GetStaleBytesRead()))
-					}
-					peerInfo := core.FromMetaPeer(peer).
-						SetReadKeys(region.GetStaleKeysRead()).
-						SetReadBytes(region.GetStaleBytesRead()).
-						SetWriteKeys(region.GetKeysWritten()).
-						SetWriteBytes(region.GetBytesWritten())
-					item = f.CheckPeerFlow(peerInfo, region, interval)
-				}
+				// directly use region read as stale read for follower
+				peerInfo := core.FromMetaPeer(peer).
+					SetReadKeys(region.GetKeysRead()).
+					SetReadBytes(region.GetBytesRead()).
+					SetWriteKeys(region.GetKeysWritten()).
+					SetWriteBytes(region.GetBytesWritten())
+				item = f.CheckPeerFlow(peerInfo, region, interval)
+				//if peer.StoreId == region.GetLeader().StoreId {
+				//	peerInfo := core.FromMetaPeer(peer).
+				//		SetReadKeys(region.GetKeysRead()).
+				//		SetReadBytes(region.GetBytesRead()).
+				//		SetWriteKeys(region.GetKeysWritten()).
+				//		SetWriteBytes(region.GetBytesWritten())
+				//	item = f.CheckPeerFlow(peerInfo, region, interval)
+				//} else {
+				//	//if region.GetStaleKeysRead() > 0 || region.GetStaleBytesRead() > 0 {
+				//	//	log.Info("stale-read",
+				//	//		zap.Uint64("region-id", region.GetID()),
+				//	//		zap.Uint64("stale-read-keys", region.GetStaleKeysRead()),
+				//	//		zap.Uint64("stale-read-bytes", region.GetStaleBytesRead()))
+				//	//}
+				//	peerInfo := core.FromMetaPeer(peer).
+				//		SetReadKeys(region.GetStaleKeysRead()).
+				//		SetReadBytes(region.GetStaleBytesRead()).
+				//		SetWriteKeys(region.GetKeysWritten()).
+				//		SetWriteBytes(region.GetBytesWritten())
+				//	item = f.CheckPeerFlow(peerInfo, region, interval)
+				//}
 			}
 			if item != nil {
 				ret = append(ret, item)
