@@ -409,19 +409,15 @@ func (h *hotScheduler) addPendingInfluence(op *operator.Operator, srcStore, dstS
 }
 
 func (h *hotScheduler) balanceHotReadRegions(cluster opt.Cluster) []*operator.Operator {
-	//prefer to balance by leader
-	s := h.r.Intn(100)
-	switch {
-	case s < int(schedulePeerPr*100):
-		peerSolver := newBalanceSolver(h, cluster, read, movePeer)
-		ops := peerSolver.solve()
-		if len(ops) > 0 {
-			return ops
-		}
-	default:
+	//prefer to balance by move peer
+	peerSolver := newBalanceSolver(h, cluster, read, movePeer)
+	ops := peerSolver.solve()
+	if len(ops) > 0 {
+		return ops
 	}
+	// leader
 	leaderSolver := newBalanceSolver(h, cluster, read, transferLeader)
-	ops := leaderSolver.solve()
+	ops = leaderSolver.solve()
 	if len(ops) > 0 {
 		return ops
 	}
@@ -1077,8 +1073,13 @@ func (h *hotScheduler) GetHotReadStatus() *statistics.StoreHotPeersInfos {
 	for id, detail := range h.stLoadInfos[readLeader] {
 		asLeader[id] = detail.toHotPeersStat()
 	}
+	asPeer := make(statistics.StoreHotPeersStat, len(h.stLoadInfos[readPeer]))
+	for id, detail := range h.stLoadInfos[readPeer] {
+		asPeer[id] = detail.toHotPeersStat()
+	}
 	return &statistics.StoreHotPeersInfos{
 		AsLeader: asLeader,
+		AsPeer:   asPeer,
 	}
 }
 
