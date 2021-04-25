@@ -90,6 +90,9 @@ func (f *hotPeerCache) RegionStats(minHotDegree int) map[uint64][]*HotPeerStat {
 
 // Update updates the items in statistics.
 func (f *hotPeerCache) Update(item *HotPeerStat) {
+	if f.kind == ReadFlow {
+		item.Log("Update hotPeerCache", log.Info)
+	}
 	if item.IsNeedDelete() {
 		if peers, ok := f.peersOfStore[item.StoreID]; ok {
 			peers.Remove(item.RegionID)
@@ -104,9 +107,6 @@ func (f *hotPeerCache) Update(item *HotPeerStat) {
 		if !ok {
 			peers = NewTopN(dimLen, TopNN, topNTTL)
 			f.peersOfStore[item.StoreID] = peers
-		}
-		if f.kind == ReadFlow {
-			log.Info("Update HotPeerStat", zap.Uint64("region-id", item.RegionID), zap.Uint64("store-id", item.StoreID))
 		}
 		peers.Put(item)
 
@@ -179,27 +179,6 @@ func (f *hotPeerCache) CheckRegionFlow(region *core.RegionInfo) (ret []*HotPeerS
 					SetWriteKeys(region.GetKeysWritten()).
 					SetWriteBytes(region.GetBytesWritten())
 				item = f.CheckPeerFlow(peerInfo, region, interval)
-				//if peer.StoreId == region.GetLeader().StoreId {
-				//	peerInfo := core.FromMetaPeer(peer).
-				//		SetReadKeys(region.GetKeysRead()).
-				//		SetReadBytes(region.GetBytesRead()).
-				//		SetWriteKeys(region.GetKeysWritten()).
-				//		SetWriteBytes(region.GetBytesWritten())
-				//	item = f.CheckPeerFlow(peerInfo, region, interval)
-				//} else {
-				//	//if region.GetStaleKeysRead() > 0 || region.GetStaleBytesRead() > 0 {
-				//	//	log.Info("stale-read",
-				//	//		zap.Uint64("region-id", region.GetID()),
-				//	//		zap.Uint64("stale-read-keys", region.GetStaleKeysRead()),
-				//	//		zap.Uint64("stale-read-bytes", region.GetStaleBytesRead()))
-				//	//}
-				//	peerInfo := core.FromMetaPeer(peer).
-				//		SetReadKeys(region.GetStaleKeysRead()).
-				//		SetReadBytes(region.GetStaleBytesRead()).
-				//		SetWriteKeys(region.GetKeysWritten()).
-				//		SetWriteBytes(region.GetBytesWritten())
-				//	item = f.CheckPeerFlow(peerInfo, region, interval)
-				//}
 			}
 			if item != nil {
 				ret = append(ret, item)
@@ -207,7 +186,13 @@ func (f *hotPeerCache) CheckRegionFlow(region *core.RegionInfo) (ret []*HotPeerS
 		}
 	}
 	if f.kind == ReadFlow {
-		log.Info("CheckRegionFlow return Item", zap.Uint64("region-id", region.GetID()), zap.Int("ret-count", len(ret)))
+		log.Info("CheckRegionFlow return Item",
+			zap.Uint64("region-id", region.GetID()),
+			zap.Int("ret-count", len(ret)),
+			zap.Uint64s("stores-id", storeIDs))
+		for _, item := range ret {
+			item.Log("CheckRegionFlow item", log.Info)
+		}
 	}
 
 	log.Debug("region heartbeat info",
