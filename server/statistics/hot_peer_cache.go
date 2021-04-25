@@ -177,6 +177,12 @@ func (f *hotPeerCache) CheckRegionFlow(region *core.RegionInfo) (ret []*HotPeerS
 						SetWriteBytes(region.GetBytesWritten())
 					item = f.CheckPeerFlow(peerInfo, region, interval)
 				} else {
+					if region.GetStaleKeysRead() > 0 || region.GetStaleBytesRead() > 0 {
+						log.Info("stale-read",
+							zap.Uint64("region-id", region.GetID()),
+							zap.Uint64("stale-read-keys", region.GetStaleKeysRead()),
+							zap.Uint64("stale-read-bytes", region.GetStaleBytesRead()))
+					}
 					peerInfo := core.FromMetaPeer(peer).
 						SetReadKeys(region.GetStaleKeysRead()).
 						SetReadBytes(region.GetStaleBytesRead()).

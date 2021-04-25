@@ -409,19 +409,22 @@ func (h *hotScheduler) addPendingInfluence(op *operator.Operator, srcStore, dstS
 }
 
 func (h *hotScheduler) balanceHotReadRegions(cluster opt.Cluster) []*operator.Operator {
-	// prefer to balance by leader
+	//prefer to balance by leader
+	s := h.r.Intn(100)
+	switch {
+	case s < int(schedulePeerPr*100):
+		peerSolver := newBalanceSolver(h, cluster, read, movePeer)
+		ops := peerSolver.solve()
+		if len(ops) > 0 {
+			return ops
+		}
+	default:
+	}
 	leaderSolver := newBalanceSolver(h, cluster, read, transferLeader)
 	ops := leaderSolver.solve()
 	if len(ops) > 0 {
 		return ops
 	}
-
-	peerSolver := newBalanceSolver(h, cluster, read, movePeer)
-	ops = peerSolver.solve()
-	if len(ops) > 0 {
-		return ops
-	}
-
 	schedulerCounter.WithLabelValues(h.GetName(), "skip").Inc()
 	return nil
 }
@@ -1018,6 +1021,13 @@ func (bs *balanceSolver) buildOperators() ([]*operator.Operator, []Influence) {
 			operator.OpHotRegion,
 			bs.cur.srcStoreID,
 			dstPeer)
+
+		if bs.rwTy == read && bs.cur.region.GetLeader().StoreId != bs.cur.srcStoreID {
+			log.Info("move-stale-read-peer",
+				zap.Uint64("region-id", bs.cur.region.GetID()),
+				zap.Uint64("stale-read-keys", bs.cur.region.GetStaleKeysRead()),
+				zap.Uint64("stale-read-bytes", bs.cur.region.GetStaleBytesRead()))
+		}
 
 		counters = append(counters,
 			hotDirectionCounter.WithLabelValues("move-peer", bs.rwTy.String(), strconv.FormatUint(bs.cur.srcStoreID, 10), "out"),
