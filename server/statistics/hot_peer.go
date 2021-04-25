@@ -71,6 +71,7 @@ func (d *dimStat) Get() float64 {
 type HotPeerStat struct {
 	StoreID  uint64 `json:"store_id"`
 	RegionID uint64 `json:"region_id"`
+	PeerID   uint64 `json:"peer_id"`
 
 	// HotDegree records the times for the region considered as hot spot during each HandleRegionHeartbeat
 	HotDegree int `json:"hot_degree"`
@@ -101,7 +102,7 @@ type HotPeerStat struct {
 
 // ID returns region ID. Implementing TopNItem.
 func (stat *HotPeerStat) ID() uint64 {
-	return stat.RegionID
+	return stat.PeerID
 }
 
 // Less compares two HotPeerStat.Implementing TopNItem.
