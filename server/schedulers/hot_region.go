@@ -415,6 +415,11 @@ func (h *hotScheduler) balanceHotReadRegions(cluster opt.Cluster) []*operator.Op
 	if len(ops) > 0 {
 		return ops
 	}
+	peerSolver = newBalanceSolver(h, cluster, read, transferLeader)
+	ops = peerSolver.solve()
+	if len(ops) > 0 {
+		return ops
+	}
 	schedulerCounter.WithLabelValues(h.GetName(), "skip").Inc()
 	return nil
 }
@@ -831,6 +836,17 @@ func (bs *balanceSolver) calcProgressiveRank() {
 			// If belong to the case, byte rate will be more balanced, ignore the key rate.
 			rank = -1
 		}
+		log.Info("calcProgressiveRank",
+			zap.Uint64("region-id", bs.cur.region.GetID()),
+			zap.Uint64("src-store-id", bs.cur.srcStoreID),
+			zap.Uint64("dst-store-id", bs.cur.dstStoreID),
+			zap.Bool("key-hot", keyHot),
+			zap.Bool("byte-hot", byteHot),
+			zap.Float64("byte-dec-ratio", byteDecRatio),
+			zap.Float64("key-dec-ratio", keyDecRatio),
+			zap.Float64("great-dec-ratio", greatDecRatio),
+			zap.Float64("minor-dec-ratio", minorDecRatio),
+			zap.Int64("rank", rank))
 	}
 	bs.cur.progressiveRank = rank
 }
