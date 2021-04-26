@@ -765,7 +765,7 @@ const (
 	defaultRegionScoreFormulaVersion = "v2"
 	// defaultHotRegionCacheHitsThreshold is the low hit number threshold of the
 	// hot region.
-	defaultHotRegionCacheHitsThreshold = 3
+	defaultHotRegionCacheHitsThreshold = 4
 	defaultSchedulerMaxWaitingOperator = 5
 	defaultLeaderSchedulePolicy        = "count"
 	defaultStoreLimitMode              = "manual"

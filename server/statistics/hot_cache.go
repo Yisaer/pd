@@ -47,6 +47,18 @@ func (w *HotCache) CheckRead(region *core.RegionInfo) []*HotPeerStat {
 	return w.readFlow.CheckRegionFlow(region)
 }
 
+func (w *HotCache) CheckPeerRead(peer *core.PeerInfo, region *core.RegionInfo) *HotPeerStat {
+	return w.readFlow.CheckPeerFlow(peer, region, StoreHeartBeatReportInterval)
+}
+
+func (w *HotCache) CleanRegionPeer(region *core.RegionInfo) (ret []*HotPeerStat) {
+	rret := w.readFlow.CleanRegionPeer(region)
+	wret := w.writeFlow.CleanRegionPeer(region)
+	ret = append(ret, rret...)
+	ret = append(ret, wret...)
+	return
+}
+
 // Update updates the cache.
 func (w *HotCache) Update(item *HotPeerStat) {
 	switch item.Kind {

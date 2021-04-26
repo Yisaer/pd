@@ -56,4 +56,4 @@ require (
 // Fix panic in unit test with go >= 1.14, ref: etcd-io/bbolt#201 https://github.com/etcd-io/bbolt/pull/201
 replace go.etcd.io/bbolt => go.etcd.io/bbolt v1.3.5
 
-replace github.com/pingcap/kvproto => github.com/yisaer/kvproto v0.0.0-20210425040441-2be80d021fb0
+replace github.com/pingcap/kvproto => github.com/yisaer/kvproto v0.0.0-20210426103119-fc5bc35210ba

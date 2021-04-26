@@ -535,6 +535,30 @@ func (c *RaftCluster) HandleStoreHeartbeat(stats *pdpb.StoreStats) error {
 		c.limiter.Collect(newStore.GetStoreStats())
 	}
 
+	for _, peerStat := range stats.GetPeerStats() {
+		regionID := peerStat.GetRegionId()
+		region := c.GetRegion(regionID)
+		if region == nil {
+			continue
+		}
+		peer := region.GetStorePeer(storeID)
+		if peer == nil {
+			continue
+		}
+		log.Info("HandleStoreHeartbeat",
+			zap.Uint64("region-id", regionID),
+			zap.Uint64("store-id", storeID),
+			zap.Uint64("read-keys", peerStat.GetPeerReadKeys()),
+			zap.Uint64("read-bytes", peerStat.GetPeerReadBytes()))
+		peerInfo := core.FromMetaPeer(peer)
+		peerInfo.SetReadBytes(peerStat.GetPeerReadBytes())
+		peerInfo.SetReadKeys(peerStat.GetPeerReadKeys())
+		item := c.hotStat.CheckPeerRead(peerInfo, region)
+		if item != nil {
+			c.hotStat.Update(item)
+		}
+	}
+
 	return nil
 }
 
@@ -546,8 +570,10 @@ func (c *RaftCluster) processRegionHeartbeat(region *core.RegionInfo) error {
 		c.RUnlock()
 		return err
 	}
-	writeItems := c.CheckWriteStatus(region)
-	readItems := c.CheckReadStatus(region)
+
+	expiredItems := c.hotStat.CleanRegionPeer(region)
+	//writeItems := c.CheckWriteStatus(region)
+	//readItems := c.CheckReadStatus(region)
 	c.RUnlock()
 
 	// Save to storage if meta is updated.
@@ -623,7 +649,7 @@ func (c *RaftCluster) processRegionHeartbeat(region *core.RegionInfo) error {
 		}
 	}
 
-	if len(writeItems) == 0 && len(readItems) == 0 && !saveKV && !saveCache && !isNew {
+	if len(expiredItems) < 1 && !saveKV && !saveCache && !isNew {
 		return nil
 	}
 
@@ -683,11 +709,8 @@ func (c *RaftCluster) processRegionHeartbeat(region *core.RegionInfo) error {
 		c.regionStats.Observe(region, c.getRegionStoresLocked(region))
 	}
 
-	for _, writeItem := range writeItems {
-		c.hotStat.Update(writeItem)
-	}
-	for _, readItem := range readItems {
-		c.hotStat.Update(readItem)
+	for _, item := range expiredItems {
+		c.hotStat.Update(item)
 	}
 	c.Unlock()
 

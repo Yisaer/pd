@@ -461,6 +461,8 @@ github.com/xordataexchange/crypt v0.0.3-0.20170626215501-b2862e3d0a77/go.mod h1:
 github.com/yisaer/kvproto v0.0.0-20210423072947-3c1d0fe8975a/go.mod h1:IOdRDPLyda8GX2hE/jO7gqaCV/PNFh8BZQCQZXfIOqI=
 github.com/yisaer/kvproto v0.0.0-20210425040441-2be80d021fb0 h1:CLPp3KTXviv/HLWpe5G5NpP8fey+A45tMTgsj4WN+tE=
 github.com/yisaer/kvproto v0.0.0-20210425040441-2be80d021fb0/go.mod h1:IOdRDPLyda8GX2hE/jO7gqaCV/PNFh8BZQCQZXfIOqI=
+github.com/yisaer/kvproto v0.0.0-20210426103119-fc5bc35210ba h1:3njAb2pDej+e73/oF/3JC7JYwUiWOu1vDZju8hN5kvo=
+github.com/yisaer/kvproto v0.0.0-20210426103119-fc5bc35210ba/go.mod h1:IOdRDPLyda8GX2hE/jO7gqaCV/PNFh8BZQCQZXfIOqI=
 github.com/yookoala/realpath v1.0.0/go.mod h1:gJJMA9wuX7AcqLy1+ffPatSCySA1FQ2S8Ya9AIoYBpE=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 go.etcd.io/bbolt v1.3.5 h1:XAzx9gjCb0Rxj7EoqcClPD1d5ZBxZJk0jbuoPHenBt0=
