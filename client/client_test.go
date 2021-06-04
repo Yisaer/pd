@@ -81,13 +81,6 @@ func (s *testClientCtxSuite) TestClientCtx(c *C) {
 	c.Assert(time.Since(start), Less, time.Second*4)
 }
 
-func (s *testClientCtxSuite) TestClientWithRetry(c *C) {
-	start := time.Now()
-	_, err := NewClientWithContext(context.TODO(), []string{"localhost:8080"}, SecurityOption{}, WithMaxErrorRetry(5))
-	c.Assert(err, NotNil)
-	c.Assert(time.Since(start), Less, time.Second*6)
-}
-
 var _ = Suite(&testClientDialOptionSuite{})
 
 type testClientDialOptionSuite struct{}
@@ -98,16 +91,16 @@ func (s *testClientDialOptionSuite) TestGRPCDialOption(c *C) {
 	defer cancel()
 	// nolint
 	cli := &baseClient{
-		urls:                 []string{"localhost:8080"},
-		checkLeaderCh:        make(chan struct{}, 1),
-		checkTSODispatcherCh: make(chan struct{}, 1),
-		ctx:                  ctx,
-		cancel:               cancel,
-		security:             SecurityOption{},
-		gRPCDialOptions:      []grpc.DialOption{grpc.WithBlock()},
+		urls:            []string{"localhost:8080"},
+		checkLeaderCh:   make(chan struct{}, 1),
+		ctx:             ctx,
+		cancel:          cancel,
+		security:        SecurityOption{},
+		gRPCDialOptions: []grpc.DialOption{grpc.WithBlock()},
 	}
+	cli.connMu.clientConns = make(map[string]*grpc.ClientConn)
 
-	err := cli.updateMember()
+	err := cli.updateLeader()
 	c.Assert(err, NotNil)
 	c.Assert(time.Since(start), Greater, 500*time.Millisecond)
 }
