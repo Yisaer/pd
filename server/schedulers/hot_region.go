@@ -604,16 +604,38 @@ func (bs *balanceSolver) filterSrcStores() map[uint64]*storeLoadDetail {
 			continue
 		}
 		minLoad := detail.LoadPred.min()
-		if slice.AllOf(minLoad.Loads, func(i int) bool {
-			if statistics.IsSelectedDim(i) {
-				return minLoad.Loads[i] > bs.sche.conf.GetSrcToleranceRatio()*detail.LoadPred.Expect.Loads[i]
-			}
-			return true
-		}) {
-			ret[id] = detail
-			hotSchedulerResultCounter.WithLabelValues("src-store-succ", strconv.FormatUint(id, 10)).Inc()
+		priority := bs.sche.conf.GetReadDimPriority()
+		if bs.rwTy == write {
+			priority = bs.sche.conf.GetWriteDimPriority()
 		}
-		hotSchedulerResultCounter.WithLabelValues("src-store-failed", strconv.FormatUint(id, 10)).Inc()
+		switch priority {
+		case equalPriority:
+			if slice.AllOf(minLoad.Loads, func(i int) bool {
+				if statistics.IsSelectedDim(i) {
+					return minLoad.Loads[i] > bs.sche.conf.GetSrcToleranceRatio()*detail.LoadPred.Expect.Loads[i]
+				}
+				return true
+			}) {
+				ret[id] = detail
+				hotSchedulerResultCounter.WithLabelValues("src-store-succ", strconv.FormatUint(id, 10)).Inc()
+			} else {
+				hotSchedulerResultCounter.WithLabelValues("src-store-failed", strconv.FormatUint(id, 10)).Inc()
+			}
+		case keyPriority:
+			if minLoad.Loads[statistics.KeyDim] > bs.sche.conf.GetSrcToleranceRatio()*detail.LoadPred.Expect.Loads[statistics.KeyDim] {
+				ret[id] = detail
+				hotSchedulerResultCounter.WithLabelValues("src-store-succ", strconv.FormatUint(id, 10)).Inc()
+			} else {
+				hotSchedulerResultCounter.WithLabelValues("src-store-failed", strconv.FormatUint(id, 10)).Inc()
+			}
+		case bytePriority:
+			if minLoad.Loads[statistics.ByteDim] > bs.sche.conf.GetSrcToleranceRatio()*detail.LoadPred.Expect.Loads[statistics.ByteDim] {
+				ret[id] = detail
+				hotSchedulerResultCounter.WithLabelValues("src-store-succ", strconv.FormatUint(id, 10)).Inc()
+			} else {
+				hotSchedulerResultCounter.WithLabelValues("src-store-failed", strconv.FormatUint(id, 10)).Inc()
+			}
+		}
 	}
 	return ret
 }
@@ -790,19 +812,42 @@ func (bs *balanceSolver) pickDstStores(filters []filter.Filter, candidates []*co
 	ret := make(map[uint64]*storeLoadDetail, len(candidates))
 	dstToleranceRatio := bs.sche.conf.GetDstToleranceRatio()
 	for _, store := range candidates {
+		id := store.GetID()
 		if filter.Target(bs.cluster.GetOpts(), store, filters) {
 			detail := bs.stLoadDetail[store.GetID()]
 			maxLoads := detail.LoadPred.max().Loads
-			if slice.AllOf(maxLoads, func(i int) bool {
-				if statistics.IsSelectedDim(i) {
-					return maxLoads[i]*dstToleranceRatio < detail.LoadPred.Expect.Loads[i]
-				}
-				return true
-			}) {
-				ret[store.GetID()] = bs.stLoadDetail[store.GetID()]
-				hotSchedulerResultCounter.WithLabelValues("dst-store-succ", strconv.FormatUint(store.GetID(), 10)).Inc()
+			priority := bs.sche.conf.GetReadDimPriority()
+			if bs.rwTy == write {
+				priority = bs.sche.conf.GetWriteDimPriority()
 			}
-			hotSchedulerResultCounter.WithLabelValues("dst-store-fail", strconv.FormatUint(store.GetID(), 10)).Inc()
+			switch priority {
+			case equalPriority:
+				if slice.AllOf(maxLoads, func(i int) bool {
+					if statistics.IsSelectedDim(i) {
+						return maxLoads[i]*dstToleranceRatio < detail.LoadPred.Expect.Loads[i]
+					}
+					return true
+				}) {
+					ret[id] = detail
+					hotSchedulerResultCounter.WithLabelValues("src-store-succ", strconv.FormatUint(id, 10)).Inc()
+				} else {
+					hotSchedulerResultCounter.WithLabelValues("src-store-failed", strconv.FormatUint(id, 10)).Inc()
+				}
+			case keyPriority:
+				if maxLoads[statistics.KeyDim]*dstToleranceRatio < detail.LoadPred.Expect.Loads[statistics.KeyDim] {
+					ret[id] = detail
+					hotSchedulerResultCounter.WithLabelValues("src-store-succ", strconv.FormatUint(id, 10)).Inc()
+				} else {
+					hotSchedulerResultCounter.WithLabelValues("src-store-failed", strconv.FormatUint(id, 10)).Inc()
+				}
+			case bytePriority:
+				if maxLoads[statistics.ByteDim]*dstToleranceRatio < detail.LoadPred.Expect.Loads[statistics.ByteDim] {
+					ret[id] = detail
+					hotSchedulerResultCounter.WithLabelValues("src-store-succ", strconv.FormatUint(id, 10)).Inc()
+				} else {
+					hotSchedulerResultCounter.WithLabelValues("src-store-failed", strconv.FormatUint(id, 10)).Inc()
+				}
+			}
 		}
 	}
 	return ret
