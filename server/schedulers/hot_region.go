@@ -899,6 +899,9 @@ func (bs *balanceSolver) pickDstStores(filters []filter.Filter, candidates []*co
 	ret := make(map[uint64]*storeLoadDetail, len(candidates))
 	dstToleranceRatio := bs.sche.conf.GetDstToleranceRatio()
 	priority := bs.sche.conf.GetReadDimPriority()
+	if bs.rwTy == write {
+		priority = bs.sche.conf.GetWriteDimPriority()
+	}
 	priorityVal := PriorityToString(priority)
 	for _, store := range candidates {
 		id := store.GetID()
