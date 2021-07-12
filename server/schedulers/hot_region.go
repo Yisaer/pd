@@ -655,57 +655,71 @@ func (bs *balanceSolver) checkInfluence(srcStore, dstStore uint64, infl Influenc
 	if bs.sche.conf.ReadWritePriority == "read" && bs.rwTy == write {
 		srcLoads := bs.sche.stLoadInfos[readLeader][srcStore].LoadPred.min().Loads
 		dstLoads := bs.sche.stLoadInfos[readLeader][dstStore].LoadPred.max().Loads
-		if bs.sche.conf.ReadDimPriority == EqualPriority {
-			if srcLoads[statistics.ByteDim]+infl.Loads[statistics.RegionReadBytes] >= dstLoads[statistics.ByteDim] ||
-				srcLoads[statistics.KeyDim]+infl.Loads[statistics.RegionReadKeys] >= dstLoads[statistics.KeyDim] {
-				return false
+		readLeaderFlag := func() bool {
+			if bs.sche.conf.ReadDimPriority == EqualPriority {
+				if srcLoads[statistics.ByteDim]+infl.Loads[statistics.RegionReadBytes] >= dstLoads[statistics.ByteDim] ||
+					srcLoads[statistics.KeyDim]+infl.Loads[statistics.RegionReadKeys] >= dstLoads[statistics.KeyDim] {
+					return false
+				}
+				return true
+			} else if bs.sche.conf.ReadDimPriority == BytePriority {
+				return srcLoads[statistics.ByteDim]+infl.Loads[statistics.RegionReadBytes] < dstLoads[statistics.ByteDim]
+			} else if bs.sche.conf.ReadDimPriority == KeyPriority {
+				return srcLoads[statistics.KeyDim]+infl.Loads[statistics.RegionReadKeys] < dstLoads[statistics.KeyDim]
 			}
 			return true
-		} else if bs.sche.conf.ReadDimPriority == BytePriority {
-			return srcLoads[statistics.ByteDim]+infl.Loads[statistics.RegionReadBytes] < dstLoads[statistics.ByteDim]
-		} else if bs.sche.conf.ReadDimPriority == KeyPriority {
-			return srcLoads[statistics.KeyDim]+infl.Loads[statistics.RegionReadKeys] < dstLoads[statistics.KeyDim]
-		}
+		}()
 		srcLoads = bs.sche.stLoadInfos[readPeer][srcStore].LoadPred.min().Loads
 		dstLoads = bs.sche.stLoadInfos[readPeer][dstStore].LoadPred.max().Loads
-		if bs.sche.conf.ReadDimPriority == EqualPriority {
-			if srcLoads[statistics.ByteDim]+infl.Loads[statistics.RegionReadBytes] >= dstLoads[statistics.ByteDim] ||
-				srcLoads[statistics.KeyDim]+infl.Loads[statistics.RegionReadKeys] >= dstLoads[statistics.KeyDim] {
-				return false
+		readPeerFlag := func() bool {
+			if bs.sche.conf.ReadDimPriority == EqualPriority {
+				if srcLoads[statistics.ByteDim]+infl.Loads[statistics.RegionReadBytes] >= dstLoads[statistics.ByteDim] ||
+					srcLoads[statistics.KeyDim]+infl.Loads[statistics.RegionReadKeys] >= dstLoads[statistics.KeyDim] {
+					return false
+				}
+				return true
+			} else if bs.sche.conf.ReadDimPriority == BytePriority {
+				return srcLoads[statistics.ByteDim]+infl.Loads[statistics.RegionReadBytes] < dstLoads[statistics.ByteDim]
+			} else if bs.sche.conf.ReadDimPriority == KeyPriority {
+				return srcLoads[statistics.KeyDim]+infl.Loads[statistics.RegionReadKeys] < dstLoads[statistics.KeyDim]
 			}
 			return true
-		} else if bs.sche.conf.ReadDimPriority == BytePriority {
-			return srcLoads[statistics.ByteDim]+infl.Loads[statistics.RegionReadBytes] < dstLoads[statistics.ByteDim]
-		} else if bs.sche.conf.ReadDimPriority == KeyPriority {
-			return srcLoads[statistics.KeyDim]+infl.Loads[statistics.RegionReadKeys] < dstLoads[statistics.KeyDim]
-		}
+		}()
+		return readLeaderFlag && readPeerFlag
 	} else if bs.sche.conf.ReadWritePriority == "write" && bs.rwTy == read {
 		srcLoads := bs.sche.stLoadInfos[writeLeader][srcStore].LoadPred.min().Loads
 		dstLoads := bs.sche.stLoadInfos[writeLeader][dstStore].LoadPred.max().Loads
-		if bs.sche.conf.WriteDimPriority == EqualPriority {
-			if srcLoads[statistics.ByteDim]+infl.Loads[statistics.RegionReadBytes] >= dstLoads[statistics.ByteDim] ||
-				srcLoads[statistics.KeyDim]+infl.Loads[statistics.RegionReadKeys] >= dstLoads[statistics.KeyDim] {
-				return false
+		writeLeaderFlag := func() bool {
+			if bs.sche.conf.WriteDimPriority == EqualPriority {
+				if srcLoads[statistics.ByteDim]+infl.Loads[statistics.RegionReadBytes] >= dstLoads[statistics.ByteDim] ||
+					srcLoads[statistics.KeyDim]+infl.Loads[statistics.RegionReadKeys] >= dstLoads[statistics.KeyDim] {
+					return false
+				}
+				return true
+			} else if bs.sche.conf.WriteDimPriority == BytePriority {
+				return srcLoads[statistics.ByteDim]+infl.Loads[statistics.RegionReadBytes] < dstLoads[statistics.ByteDim]
+			} else if bs.sche.conf.WriteDimPriority == KeyPriority {
+				return srcLoads[statistics.KeyDim]+infl.Loads[statistics.RegionReadKeys] < dstLoads[statistics.KeyDim]
 			}
 			return true
-		} else if bs.sche.conf.WriteDimPriority == BytePriority {
-			return srcLoads[statistics.ByteDim]+infl.Loads[statistics.RegionReadBytes] < dstLoads[statistics.ByteDim]
-		} else if bs.sche.conf.WriteDimPriority == KeyPriority {
-			return srcLoads[statistics.KeyDim]+infl.Loads[statistics.RegionReadKeys] < dstLoads[statistics.KeyDim]
-		}
+		}()
 		srcLoads = bs.sche.stLoadInfos[writePeer][srcStore].LoadPred.min().Loads
 		dstLoads = bs.sche.stLoadInfos[writePeer][dstStore].LoadPred.max().Loads
-		if bs.sche.conf.WriteDimPriority == EqualPriority {
-			if srcLoads[statistics.ByteDim]+infl.Loads[statistics.RegionReadBytes] >= dstLoads[statistics.ByteDim] ||
-				srcLoads[statistics.KeyDim]+infl.Loads[statistics.RegionReadKeys] >= dstLoads[statistics.KeyDim] {
-				return false
+		writePeerFlag := func() bool {
+			if bs.sche.conf.WriteDimPriority == EqualPriority {
+				if srcLoads[statistics.ByteDim]+infl.Loads[statistics.RegionReadBytes] >= dstLoads[statistics.ByteDim] ||
+					srcLoads[statistics.KeyDim]+infl.Loads[statistics.RegionReadKeys] >= dstLoads[statistics.KeyDim] {
+					return false
+				}
+				return true
+			} else if bs.sche.conf.WriteDimPriority == BytePriority {
+				return srcLoads[statistics.ByteDim]+infl.Loads[statistics.RegionReadBytes] < dstLoads[statistics.ByteDim]
+			} else if bs.sche.conf.WriteDimPriority == KeyPriority {
+				return srcLoads[statistics.KeyDim]+infl.Loads[statistics.RegionReadKeys] < dstLoads[statistics.KeyDim]
 			}
 			return true
-		} else if bs.sche.conf.WriteDimPriority == BytePriority {
-			return srcLoads[statistics.ByteDim]+infl.Loads[statistics.RegionReadBytes] < dstLoads[statistics.ByteDim]
-		} else if bs.sche.conf.WriteDimPriority == KeyPriority {
-			return srcLoads[statistics.KeyDim]+infl.Loads[statistics.RegionReadKeys] < dstLoads[statistics.KeyDim]
-		}
+		}()
+		return writeLeaderFlag && writePeerFlag
 	}
 	return true
 }
