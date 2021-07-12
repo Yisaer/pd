@@ -601,12 +601,18 @@ func (bs *balanceSolver) solve() []*operator.Operator {
 				bs.calcProgressiveRank()
 
 				if bs.cur.progressiveRank < 0 && bs.betterThan(best) {
-					if newOps, newInfls := bs.buildOperators(); len(newOps) > 0 {
+					newOps, newInfls := bs.buildOperators()
+					if len(newOps) > 0 {
 						ops = newOps
 						infls = newInfls
 						clone := *bs.cur
 						best = &clone
+					} else {
+						log.Info("create operator failed",
+							zap.Uint64("src-store", bs.cur.srcStoreID),
+							zap.Uint64("dst-store", bs.cur.dstStoreID))
 					}
+
 				}
 			}
 		}
@@ -1024,9 +1030,9 @@ func (bs *balanceSolver) calcProgressiveRank() {
 			}
 		} else if priority == bytePriority {
 			switch {
-			case byteHot && keyDecRatio <= greatDecRatio*weightRatio:
+			case byteHot && byteDecRatio <= greatDecRatio*weightRatio:
 				rank = -3
-			case byteHot && keyDecRatio <= minorDecRatio*weightRatio:
+			case byteHot && byteDecRatio <= minorDecRatio*weightRatio:
 				rank = -2
 			}
 		}
@@ -1042,7 +1048,8 @@ func (bs *balanceSolver) calcProgressiveRank() {
 			zap.Float64("greatDecRatio", greatDecRatio),
 			zap.Float64("minorDecRatio", minorDecRatio),
 			zap.Bool("keyHot", keyHot),
-			zap.Bool("byteHot", byteHot))
+			zap.Bool("byteHot", byteHot),
+			zap.String("priority", PriorityToString(priority)))
 	}
 }
 
