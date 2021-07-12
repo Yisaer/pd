@@ -599,9 +599,18 @@ func (bs *balanceSolver) solve() []*operator.Operator {
 			for dstStoreID := range bs.filterDstStores() {
 				bs.cur.dstStoreID = dstStoreID
 				bs.calcProgressiveRank()
+				x := bs.betterThan(best)
 				log.Info("after calcProgressiveRank try to create operator",
 					zap.Uint64("src-store", bs.cur.srcStoreID),
-					zap.Uint64("dst-store", bs.cur.dstStoreID))
+					zap.Uint64("dst-store", bs.cur.dstStoreID),
+					zap.Bool("better", x),
+					zap.Int64("rank", bs.cur.progressiveRank))
+				if best != nil {
+					log.Info("after calcProgressiveRank after best",
+						zap.Uint64("src-store-id", srcStoreID),
+						zap.Uint64("dst-store-id", dstStoreID),
+						zap.Int64("rank", bs.cur.progressiveRank))
+				}
 				if bs.cur.progressiveRank < 0 && bs.betterThan(best) {
 					log.Info("after calcProgressiveRank try to build Operator",
 						zap.Uint64("src-store", bs.cur.srcStoreID),
