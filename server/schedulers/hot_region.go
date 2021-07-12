@@ -638,6 +638,11 @@ func (bs *balanceSolver) allowBalance() bool {
 func (bs *balanceSolver) filterSrcStores() map[uint64]*storeLoadDetail {
 	srcToleranceRatio := bs.sche.conf.GetSrcToleranceRatio()
 	ret := make(map[uint64]*storeLoadDetail)
+	priority := bs.sche.conf.GetReadDimPriority()
+	if bs.rwTy == write {
+		priority = bs.sche.conf.GetWriteDimPriority()
+	}
+	priorityVal := PriorityToString(priority)
 	for id, detail := range bs.stLoadDetail {
 		if bs.cluster.GetStore(id) == nil {
 			log.Error("failed to get the source store", zap.Uint64("store-id", id), errs.ZapError(errs.ErrGetSourceStore))
@@ -647,10 +652,6 @@ func (bs *balanceSolver) filterSrcStores() map[uint64]*storeLoadDetail {
 			continue
 		}
 		minLoad := detail.LoadPred.min()
-		priority := bs.sche.conf.GetReadDimPriority()
-		if bs.rwTy == write {
-			priority = bs.sche.conf.GetWriteDimPriority()
-		}
 		switch priority {
 		case equalPriority:
 			if slice.AllOf(minLoad.Loads, func(i int) bool {
@@ -660,23 +661,23 @@ func (bs *balanceSolver) filterSrcStores() map[uint64]*storeLoadDetail {
 				return true
 			}) {
 				ret[id] = detail
-				hotSchedulerResultCounter.WithLabelValues("src-store-succ", strconv.FormatUint(id, 10)).Inc()
+				hotSchedulerResultCounter.WithLabelValues("src-store-succ", strconv.FormatUint(id, 10), priorityVal).Inc()
 			} else {
-				hotSchedulerResultCounter.WithLabelValues("src-store-failed", strconv.FormatUint(id, 10)).Inc()
+				hotSchedulerResultCounter.WithLabelValues("src-store-failed", strconv.FormatUint(id, 10), priorityVal).Inc()
 			}
 		case keyPriority:
 			if minLoad.Loads[statistics.KeyDim] > srcToleranceRatio*detail.LoadPred.Expect.Loads[statistics.KeyDim] {
 				ret[id] = detail
-				hotSchedulerResultCounter.WithLabelValues("src-store-succ", strconv.FormatUint(id, 10)).Inc()
+				hotSchedulerResultCounter.WithLabelValues("src-store-succ", strconv.FormatUint(id, 10), priorityVal).Inc()
 			} else {
-				hotSchedulerResultCounter.WithLabelValues("src-store-failed", strconv.FormatUint(id, 10)).Inc()
+				hotSchedulerResultCounter.WithLabelValues("src-store-failed", strconv.FormatUint(id, 10), priorityVal).Inc()
 			}
 		case bytePriority:
 			if minLoad.Loads[statistics.ByteDim] > bs.sche.conf.GetSrcToleranceRatio()*detail.LoadPred.Expect.Loads[statistics.ByteDim] {
 				ret[id] = detail
-				hotSchedulerResultCounter.WithLabelValues("src-store-succ", strconv.FormatUint(id, 10)).Inc()
+				hotSchedulerResultCounter.WithLabelValues("src-store-succ", strconv.FormatUint(id, 10), priorityVal).Inc()
 			} else {
-				hotSchedulerResultCounter.WithLabelValues("src-store-failed", strconv.FormatUint(id, 10)).Inc()
+				hotSchedulerResultCounter.WithLabelValues("src-store-failed", strconv.FormatUint(id, 10), priorityVal).Inc()
 			}
 		}
 	}

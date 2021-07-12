@@ -187,6 +187,18 @@ func FromStringPriority(priority string) dimPriority {
 	return equalPriority
 }
 
+func PriorityToString(p dimPriority) string {
+	switch p {
+	case equalPriority:
+		return EqualPriority
+	case keyPriority:
+		return KeyPriority
+	case bytePriority:
+		return BytePriority
+	}
+	return EqualPriority
+}
+
 func (conf *hotRegionSchedulerConfig) GetReadDimPriority() dimPriority {
 	conf.Lock()
 	defer conf.Unlock()
