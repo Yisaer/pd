@@ -656,7 +656,16 @@ func (bs *balanceSolver) filterSrcStores() map[uint64]*storeLoadDetail {
 		case equalPriority:
 			if slice.AllOf(minLoad.Loads, func(i int) bool {
 				if statistics.IsSelectedDim(i) {
-					return minLoad.Loads[i] > srcToleranceRatio*detail.LoadPred.Expect.Loads[i]
+					t := minLoad.Loads[i] > srcToleranceRatio*detail.LoadPred.Expect.Loads[i]
+					if t {
+						return true
+					}
+					log.Info("src filter by min/exp",
+						zap.Uint64("storeID", id),
+						zap.Float64("expect", srcToleranceRatio*detail.LoadPred.Expect.Loads[i]),
+						zap.Float64("min", minLoad.Loads[i]),
+						zap.Int("dim", i),
+						zap.String("priority", priorityVal))
 				}
 				return true
 			}) {
@@ -670,6 +679,12 @@ func (bs *balanceSolver) filterSrcStores() map[uint64]*storeLoadDetail {
 				ret[id] = detail
 				hotSchedulerResultCounter.WithLabelValues("src-store-succ", strconv.FormatUint(id, 10), priorityVal).Inc()
 			} else {
+				log.Info("src filter by min/exp",
+					zap.Uint64("storeID", id),
+					zap.Float64("expect", srcToleranceRatio*detail.LoadPred.Expect.Loads[statistics.KeyDim]),
+					zap.Float64("min", minLoad.Loads[statistics.KeyDim]),
+					zap.String("dim", KeyPriority),
+					zap.String("priority", priorityVal))
 				hotSchedulerResultCounter.WithLabelValues("src-store-failed", strconv.FormatUint(id, 10), priorityVal).Inc()
 			}
 		case bytePriority:
@@ -677,6 +692,12 @@ func (bs *balanceSolver) filterSrcStores() map[uint64]*storeLoadDetail {
 				ret[id] = detail
 				hotSchedulerResultCounter.WithLabelValues("src-store-succ", strconv.FormatUint(id, 10), priorityVal).Inc()
 			} else {
+				log.Info("src filter by min/exp",
+					zap.Uint64("storeID", id),
+					zap.Float64("expect", bs.sche.conf.GetSrcToleranceRatio()*detail.LoadPred.Expect.Loads[statistics.ByteDim]),
+					zap.Float64("min", minLoad.Loads[statistics.ByteDim]),
+					zap.String("dim", BytePriority),
+					zap.String("priority", priorityVal))
 				hotSchedulerResultCounter.WithLabelValues("src-store-failed", strconv.FormatUint(id, 10), priorityVal).Inc()
 			}
 		}
@@ -855,12 +876,13 @@ func (bs *balanceSolver) filterDstStores() map[uint64]*storeLoadDetail {
 func (bs *balanceSolver) pickDstStores(filters []filter.Filter, candidates []*core.StoreInfo) map[uint64]*storeLoadDetail {
 	ret := make(map[uint64]*storeLoadDetail, len(candidates))
 	dstToleranceRatio := bs.sche.conf.GetDstToleranceRatio()
+	priority := bs.sche.conf.GetReadDimPriority()
+	priorityVal := PriorityToString(priority)
 	for _, store := range candidates {
 		id := store.GetID()
 		if filter.Target(bs.cluster.GetOpts(), store, filters) {
 			detail := bs.stLoadDetail[store.GetID()]
 			maxLoads := detail.LoadPred.max().Loads
-			priority := bs.sche.conf.GetReadDimPriority()
 			if bs.rwTy == write {
 				priority = bs.sche.conf.GetWriteDimPriority()
 			}
@@ -868,28 +890,50 @@ func (bs *balanceSolver) pickDstStores(filters []filter.Filter, candidates []*co
 			case equalPriority:
 				if slice.AllOf(maxLoads, func(i int) bool {
 					if statistics.IsSelectedDim(i) {
-						return maxLoads[i]*dstToleranceRatio < detail.LoadPred.Expect.Loads[i]
+						x := maxLoads[i]*dstToleranceRatio < detail.LoadPred.Expect.Loads[i]
+						if x {
+							return true
+						}
+						log.Info("dst filter by max/exp failed",
+							zap.Uint64("storeID", id),
+							zap.Float64("expect", maxLoads[i]*dstToleranceRatio),
+							zap.Float64("max", detail.LoadPred.Expect.Loads[i]),
+							zap.Int("dim", i),
+							zap.String("priority", priorityVal))
+						return false
 					}
 					return true
 				}) {
 					ret[id] = detail
-					hotSchedulerResultCounter.WithLabelValues("src-store-succ", strconv.FormatUint(id, 10)).Inc()
+					hotSchedulerResultCounter.WithLabelValues("dst-store-succ", strconv.FormatUint(id, 10), priorityVal).Inc()
 				} else {
-					hotSchedulerResultCounter.WithLabelValues("src-store-failed", strconv.FormatUint(id, 10)).Inc()
+					hotSchedulerResultCounter.WithLabelValues("dst-store-failed", strconv.FormatUint(id, 10), priorityVal).Inc()
 				}
 			case keyPriority:
 				if maxLoads[statistics.KeyDim]*dstToleranceRatio < detail.LoadPred.Expect.Loads[statistics.KeyDim] {
 					ret[id] = detail
-					hotSchedulerResultCounter.WithLabelValues("src-store-succ", strconv.FormatUint(id, 10)).Inc()
+					hotSchedulerResultCounter.WithLabelValues("dst-store-succ", strconv.FormatUint(id, 10), priorityVal).Inc()
 				} else {
-					hotSchedulerResultCounter.WithLabelValues("src-store-failed", strconv.FormatUint(id, 10)).Inc()
+					log.Info("dst filter by max/exp failed",
+						zap.Uint64("storeID", id),
+						zap.Float64("expect", detail.LoadPred.Expect.Loads[statistics.KeyDim]),
+						zap.Float64("max", maxLoads[statistics.KeyDim]*dstToleranceRatio),
+						zap.String("dim", KeyPriority),
+						zap.String("priority", priorityVal))
+					hotSchedulerResultCounter.WithLabelValues("dst-store-failed", strconv.FormatUint(id, 10), priorityVal).Inc()
 				}
 			case bytePriority:
 				if maxLoads[statistics.ByteDim]*dstToleranceRatio < detail.LoadPred.Expect.Loads[statistics.ByteDim] {
 					ret[id] = detail
-					hotSchedulerResultCounter.WithLabelValues("src-store-succ", strconv.FormatUint(id, 10)).Inc()
+					hotSchedulerResultCounter.WithLabelValues("dst-store-succ", strconv.FormatUint(id, 10), priorityVal).Inc()
 				} else {
-					hotSchedulerResultCounter.WithLabelValues("src-store-failed", strconv.FormatUint(id, 10)).Inc()
+					log.Info("dst filter by max/exp failed",
+						zap.Uint64("storeID", id),
+						zap.Float64("expect", detail.LoadPred.Expect.Loads[statistics.ByteDim]),
+						zap.Float64("max", maxLoads[statistics.ByteDim]*dstToleranceRatio),
+						zap.String("dim", BytePriority),
+						zap.String("priority", priorityVal))
+					hotSchedulerResultCounter.WithLabelValues("dst-store-failed", strconv.FormatUint(id, 10), priorityVal).Inc()
 				}
 			}
 		}
