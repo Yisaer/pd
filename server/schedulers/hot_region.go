@@ -634,13 +634,80 @@ func (bs *balanceSolver) solve() []*operator.Operator {
 		}
 	}
 
+	var fops []*operator.Operator
 	for i := 0; i < len(ops); i++ {
 		// TODO: multiple operators need to be atomic.
+		if !bs.checkInfluence(best.srcStoreID, best.dstStoreID, infls[i]) {
+			continue
+		}
 		if !bs.sche.addPendingInfluence(ops[i], best.srcStoreID, best.dstStoreID, infls[i]) {
 			return nil
 		}
+		fops = append(fops, ops[i])
 	}
-	return ops
+	return fops
+}
+
+func (bs *balanceSolver) checkInfluence(srcStore, dstStore uint64, infl Influence) bool {
+	if bs.sche.conf.ReadWritePriority == EqualPriority {
+		return true
+	}
+	if bs.sche.conf.ReadWritePriority == "read" && bs.rwTy == write {
+		srcLoads := bs.sche.stLoadInfos[readLeader][srcStore].LoadPred.min().Loads
+		dstLoads := bs.sche.stLoadInfos[readLeader][dstStore].LoadPred.max().Loads
+		if bs.sche.conf.ReadDimPriority == EqualPriority {
+			if srcLoads[statistics.ByteDim]+infl.Loads[statistics.RegionReadBytes] >= dstLoads[statistics.ByteDim] ||
+				srcLoads[statistics.KeyDim]+infl.Loads[statistics.RegionReadKeys] >= dstLoads[statistics.KeyDim] {
+				return false
+			}
+			return true
+		} else if bs.sche.conf.ReadDimPriority == BytePriority {
+			return srcLoads[statistics.ByteDim]+infl.Loads[statistics.RegionReadBytes] < dstLoads[statistics.ByteDim]
+		} else if bs.sche.conf.ReadDimPriority == KeyPriority {
+			return srcLoads[statistics.KeyDim]+infl.Loads[statistics.RegionReadKeys] < dstLoads[statistics.KeyDim]
+		}
+		srcLoads = bs.sche.stLoadInfos[readPeer][srcStore].LoadPred.min().Loads
+		dstLoads = bs.sche.stLoadInfos[readPeer][dstStore].LoadPred.max().Loads
+		if bs.sche.conf.ReadDimPriority == EqualPriority {
+			if srcLoads[statistics.ByteDim]+infl.Loads[statistics.RegionReadBytes] >= dstLoads[statistics.ByteDim] ||
+				srcLoads[statistics.KeyDim]+infl.Loads[statistics.RegionReadKeys] >= dstLoads[statistics.KeyDim] {
+				return false
+			}
+			return true
+		} else if bs.sche.conf.ReadDimPriority == BytePriority {
+			return srcLoads[statistics.ByteDim]+infl.Loads[statistics.RegionReadBytes] < dstLoads[statistics.ByteDim]
+		} else if bs.sche.conf.ReadDimPriority == KeyPriority {
+			return srcLoads[statistics.KeyDim]+infl.Loads[statistics.RegionReadKeys] < dstLoads[statistics.KeyDim]
+		}
+	} else if bs.sche.conf.ReadWritePriority == "write" && bs.rwTy == read {
+		srcLoads := bs.sche.stLoadInfos[writeLeader][srcStore].LoadPred.min().Loads
+		dstLoads := bs.sche.stLoadInfos[writeLeader][dstStore].LoadPred.max().Loads
+		if bs.sche.conf.WriteDimPriority == EqualPriority {
+			if srcLoads[statistics.ByteDim]+infl.Loads[statistics.RegionReadBytes] >= dstLoads[statistics.ByteDim] ||
+				srcLoads[statistics.KeyDim]+infl.Loads[statistics.RegionReadKeys] >= dstLoads[statistics.KeyDim] {
+				return false
+			}
+			return true
+		} else if bs.sche.conf.WriteDimPriority == BytePriority {
+			return srcLoads[statistics.ByteDim]+infl.Loads[statistics.RegionReadBytes] < dstLoads[statistics.ByteDim]
+		} else if bs.sche.conf.WriteDimPriority == KeyPriority {
+			return srcLoads[statistics.KeyDim]+infl.Loads[statistics.RegionReadKeys] < dstLoads[statistics.KeyDim]
+		}
+		srcLoads = bs.sche.stLoadInfos[writePeer][srcStore].LoadPred.min().Loads
+		dstLoads = bs.sche.stLoadInfos[writePeer][dstStore].LoadPred.max().Loads
+		if bs.sche.conf.WriteDimPriority == EqualPriority {
+			if srcLoads[statistics.ByteDim]+infl.Loads[statistics.RegionReadBytes] >= dstLoads[statistics.ByteDim] ||
+				srcLoads[statistics.KeyDim]+infl.Loads[statistics.RegionReadKeys] >= dstLoads[statistics.KeyDim] {
+				return false
+			}
+			return true
+		} else if bs.sche.conf.WriteDimPriority == BytePriority {
+			return srcLoads[statistics.ByteDim]+infl.Loads[statistics.RegionReadBytes] < dstLoads[statistics.ByteDim]
+		} else if bs.sche.conf.WriteDimPriority == KeyPriority {
+			return srcLoads[statistics.KeyDim]+infl.Loads[statistics.RegionReadKeys] < dstLoads[statistics.KeyDim]
+		}
+	}
+	return true
 }
 
 // allowBalance check whether the operator count have exceed the hot region limit by type

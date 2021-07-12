@@ -53,6 +53,7 @@ func initHotRegionScheduleConfig() *hotRegionSchedulerConfig {
 		DstToleranceRatio:      1.05, // Tolerate 5% difference
 		ReadDimPriority:        EqualPriority,
 		WriteDimPriority:       EqualPriority,
+		ReadWritePriority:      EqualPriority,
 	}
 }
 
@@ -77,6 +78,7 @@ type hotRegionSchedulerConfig struct {
 	DstToleranceRatio      float64 `json:"dst-tolerance-ratio"`
 	ReadDimPriority        string  `json:"read-dim-priority"`
 	WriteDimPriority       string  `json:"write-dim-priority"`
+	ReadWritePriority      string  `json:"read-write-priority"`
 }
 
 func (conf *hotRegionSchedulerConfig) EncodeConfig() ([]byte, error) {
