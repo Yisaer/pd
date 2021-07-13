@@ -1160,8 +1160,8 @@ func (bs *balanceSolver) calcProgressiveRank() {
 			zap.Bool("keyHot", keyHot),
 			zap.Bool("byteHot", byteHot),
 			zap.String("priority", PriorityToString(priority)))
-		bs.cur.progressiveRank = rank
 	}
+	bs.cur.progressiveRank = rank
 }
 
 func (bs *balanceSolver) getMinRate(dim int) float64 {
