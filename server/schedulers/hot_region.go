@@ -652,20 +652,27 @@ func (bs *balanceSolver) checkInfluence(srcStore, dstStore uint64, infl Influenc
 	if bs.sche.conf.ReadWritePriority == EqualPriority {
 		return true
 	}
+	if bs.sche.conf.ReadWritePriority == "write" && bs.rwTy == write {
+		return true
+	}
+	if bs.sche.conf.ReadWritePriority == "read" && bs.rwTy == read {
+		return true
+	}
+
 	if bs.sche.conf.ReadWritePriority == "read" && bs.rwTy == write {
 		srcLoads := bs.sche.stLoadInfos[readLeader][srcStore].LoadPred.min().Loads
 		dstLoads := bs.sche.stLoadInfos[readLeader][dstStore].LoadPred.max().Loads
 		readLeaderFlag := func() bool {
 			if bs.sche.conf.ReadDimPriority == EqualPriority {
-				if srcLoads[statistics.ByteDim]+infl.Loads[statistics.RegionReadBytes] >= dstLoads[statistics.ByteDim] ||
-					srcLoads[statistics.KeyDim]+infl.Loads[statistics.RegionReadKeys] >= dstLoads[statistics.KeyDim] {
-					return false
+				if srcLoads[statistics.ByteDim]-infl.Loads[statistics.RegionReadBytes] > dstLoads[statistics.ByteDim]+infl.Loads[statistics.RegionReadBytes] &&
+					srcLoads[statistics.KeyDim]-infl.Loads[statistics.RegionReadKeys] > dstLoads[statistics.KeyDim]+infl.Loads[statistics.RegionReadBytes] {
+					return true
 				}
-				return true
+				return false
 			} else if bs.sche.conf.ReadDimPriority == BytePriority {
-				return srcLoads[statistics.ByteDim]+infl.Loads[statistics.RegionReadBytes] < dstLoads[statistics.ByteDim]
+				return srcLoads[statistics.ByteDim]-infl.Loads[statistics.RegionReadBytes] > dstLoads[statistics.ByteDim]+infl.Loads[statistics.RegionReadBytes]
 			} else if bs.sche.conf.ReadDimPriority == KeyPriority {
-				return srcLoads[statistics.KeyDim]+infl.Loads[statistics.RegionReadKeys] < dstLoads[statistics.KeyDim]
+				return srcLoads[statistics.KeyDim]-infl.Loads[statistics.RegionReadKeys] > dstLoads[statistics.KeyDim]+infl.Loads[statistics.RegionReadKeys]
 			}
 			return true
 		}()
@@ -673,15 +680,15 @@ func (bs *balanceSolver) checkInfluence(srcStore, dstStore uint64, infl Influenc
 		dstLoads = bs.sche.stLoadInfos[readPeer][dstStore].LoadPred.max().Loads
 		readPeerFlag := func() bool {
 			if bs.sche.conf.ReadDimPriority == EqualPriority {
-				if srcLoads[statistics.ByteDim]+infl.Loads[statistics.RegionReadBytes] >= dstLoads[statistics.ByteDim] ||
-					srcLoads[statistics.KeyDim]+infl.Loads[statistics.RegionReadKeys] >= dstLoads[statistics.KeyDim] {
-					return false
+				if srcLoads[statistics.ByteDim]-infl.Loads[statistics.RegionReadBytes] > dstLoads[statistics.ByteDim]+infl.Loads[statistics.RegionReadBytes] &&
+					srcLoads[statistics.KeyDim]-infl.Loads[statistics.RegionReadKeys] > dstLoads[statistics.KeyDim]+infl.Loads[statistics.RegionReadBytes] {
+					return true
 				}
-				return true
+				return false
 			} else if bs.sche.conf.ReadDimPriority == BytePriority {
-				return srcLoads[statistics.ByteDim]+infl.Loads[statistics.RegionReadBytes] < dstLoads[statistics.ByteDim]
+				return srcLoads[statistics.ByteDim]-infl.Loads[statistics.RegionReadBytes] > dstLoads[statistics.ByteDim]+infl.Loads[statistics.RegionReadBytes]
 			} else if bs.sche.conf.ReadDimPriority == KeyPriority {
-				return srcLoads[statistics.KeyDim]+infl.Loads[statistics.RegionReadKeys] < dstLoads[statistics.KeyDim]
+				return srcLoads[statistics.KeyDim]-infl.Loads[statistics.RegionReadKeys] > dstLoads[statistics.KeyDim]+infl.Loads[statistics.RegionReadKeys]
 			}
 			return true
 		}()
@@ -691,15 +698,15 @@ func (bs *balanceSolver) checkInfluence(srcStore, dstStore uint64, infl Influenc
 		dstLoads := bs.sche.stLoadInfos[writeLeader][dstStore].LoadPred.max().Loads
 		writeLeaderFlag := func() bool {
 			if bs.sche.conf.WriteDimPriority == EqualPriority {
-				if srcLoads[statistics.ByteDim]+infl.Loads[statistics.RegionReadBytes] >= dstLoads[statistics.ByteDim] ||
-					srcLoads[statistics.KeyDim]+infl.Loads[statistics.RegionReadKeys] >= dstLoads[statistics.KeyDim] {
-					return false
+				if srcLoads[statistics.ByteDim]-infl.Loads[statistics.RegionWriteBytes] >= dstLoads[statistics.ByteDim]+infl.Loads[statistics.RegionWriteBytes] &&
+					srcLoads[statistics.KeyDim]-infl.Loads[statistics.RegionWriteKeys] >= dstLoads[statistics.KeyDim]+infl.Loads[statistics.RegionWriteKeys] {
+					return true
 				}
-				return true
+				return false
 			} else if bs.sche.conf.WriteDimPriority == BytePriority {
-				return srcLoads[statistics.ByteDim]+infl.Loads[statistics.RegionReadBytes] < dstLoads[statistics.ByteDim]
+				return srcLoads[statistics.ByteDim]-infl.Loads[statistics.RegionWriteBytes] > dstLoads[statistics.ByteDim]+infl.Loads[statistics.RegionWriteBytes]
 			} else if bs.sche.conf.WriteDimPriority == KeyPriority {
-				return srcLoads[statistics.KeyDim]+infl.Loads[statistics.RegionReadKeys] < dstLoads[statistics.KeyDim]
+				return srcLoads[statistics.KeyDim]-infl.Loads[statistics.RegionWriteKeys] > dstLoads[statistics.KeyDim]+infl.Loads[statistics.RegionWriteKeys]
 			}
 			return true
 		}()
@@ -707,15 +714,15 @@ func (bs *balanceSolver) checkInfluence(srcStore, dstStore uint64, infl Influenc
 		dstLoads = bs.sche.stLoadInfos[writePeer][dstStore].LoadPred.max().Loads
 		writePeerFlag := func() bool {
 			if bs.sche.conf.WriteDimPriority == EqualPriority {
-				if srcLoads[statistics.ByteDim]+infl.Loads[statistics.RegionReadBytes] >= dstLoads[statistics.ByteDim] ||
-					srcLoads[statistics.KeyDim]+infl.Loads[statistics.RegionReadKeys] >= dstLoads[statistics.KeyDim] {
-					return false
+				if srcLoads[statistics.ByteDim]-infl.Loads[statistics.RegionWriteBytes] >= dstLoads[statistics.ByteDim]+infl.Loads[statistics.RegionWriteBytes] &&
+					srcLoads[statistics.KeyDim]-infl.Loads[statistics.RegionWriteKeys] >= dstLoads[statistics.KeyDim]+infl.Loads[statistics.RegionWriteKeys] {
+					return true
 				}
-				return true
+				return false
 			} else if bs.sche.conf.WriteDimPriority == BytePriority {
-				return srcLoads[statistics.ByteDim]+infl.Loads[statistics.RegionReadBytes] < dstLoads[statistics.ByteDim]
+				return srcLoads[statistics.ByteDim]-infl.Loads[statistics.RegionWriteBytes] > dstLoads[statistics.ByteDim]+infl.Loads[statistics.RegionWriteBytes]
 			} else if bs.sche.conf.WriteDimPriority == KeyPriority {
-				return srcLoads[statistics.KeyDim]+infl.Loads[statistics.RegionReadKeys] < dstLoads[statistics.KeyDim]
+				return srcLoads[statistics.KeyDim]-infl.Loads[statistics.RegionWriteKeys] > dstLoads[statistics.KeyDim]+infl.Loads[statistics.RegionWriteKeys]
 			}
 			return true
 		}()
@@ -1066,28 +1073,31 @@ func (bs *balanceSolver) calcProgressiveRank() {
 	if bs.rwTy == write && bs.opTy == transferLeader {
 		// In this condition, CPU usage is the matter.
 		// Only consider about key rate.
+		srcKeyRate := srcLd.Loads[statistics.KeyDim]
+		dstKeyRate := dstLd.Loads[statistics.KeyDim]
+		peerKeyRate := peer.GetLoad(getRegionStatKind(bs.rwTy, statistics.KeyDim))
 		if priority == equalPriority || priority == keyPriority {
-			srcKeyRate := srcLd.Loads[statistics.KeyDim]
-			dstKeyRate := dstLd.Loads[statistics.KeyDim]
-			peerKeyRate := peer.GetLoad(getRegionStatKind(bs.rwTy, statistics.KeyDim))
 			if srcKeyRate-peerKeyRate >= dstKeyRate+peerKeyRate {
 				rank = -1
 			}
 		} else {
-			srcKeyRate := srcLd.Loads[statistics.ByteDim]
-			dstKeyRate := dstLd.Loads[statistics.ByteDim]
-			peerKeyRate := peer.GetLoad(getRegionStatKind(bs.rwTy, statistics.ByteDim))
+			srcKeyRate = srcLd.Loads[statistics.ByteDim]
+			dstKeyRate = dstLd.Loads[statistics.ByteDim]
+			peerKeyRate = peer.GetLoad(getRegionStatKind(bs.rwTy, statistics.ByteDim))
 			if srcKeyRate-peerKeyRate >= dstKeyRate+peerKeyRate {
 				rank = -1
 			}
 		}
 
-		log.Debug("calcProgressiveRank",
+		log.Debug("calcProgressiveRankWriteTransferLeader",
 			zap.String("rwType", bs.rwTy.String()),
 			zap.String("opType", bs.opTy.String()),
 			zap.Uint64("region-id", bs.cur.region.GetID()),
 			zap.Uint64("from-store-id", bs.cur.srcStoreID),
 			zap.Uint64("to-store-id", bs.cur.dstStoreID),
+			zap.Float64("srcRate", srcKeyRate),
+			zap.Float64("dstRate", dstKeyRate),
+			zap.Float64("peerRate", peerKeyRate),
 			zap.Int64("rank", rank))
 	} else {
 		// we use DecRatio(Decline Ratio) to expect that the dst store's (key/byte) rate should still be less
