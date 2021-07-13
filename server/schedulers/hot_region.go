@@ -996,9 +996,6 @@ func (bs *balanceSolver) pickDstStores(filters []filter.Filter, candidates []*co
 		if filter.Target(bs.cluster.GetOpts(), store, filters) {
 			detail := bs.stLoadDetail[store.GetID()]
 			maxLoads := detail.LoadPred.max().Loads
-			if bs.rwTy == write {
-				priority = bs.sche.conf.GetWriteDimPriority()
-			}
 			switch priority {
 			case equalPriority:
 				if slice.AllOf(maxLoads, func(i int) bool {
@@ -1067,7 +1064,7 @@ func (bs *balanceSolver) calcProgressiveRank() {
 	if bs.rwTy == write {
 		srcWeight = bs.cluster.GetStore(bs.cur.srcStoreID).GetHotWriteWeight()
 		dstWeight = bs.cluster.GetStore(bs.cur.dstStoreID).GetHotWriteWeight()
-		priority = FromStringPriority(bs.sche.conf.ReadDimPriority)
+		priority = FromStringPriority(bs.sche.conf.WriteDimPriority)
 	}
 	weightRatio := dstWeight / srcWeight
 	if bs.rwTy == write && bs.opTy == transferLeader {
